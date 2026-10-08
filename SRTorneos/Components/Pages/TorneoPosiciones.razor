@@ -1,0 +1,63 @@
+@page "/torneos/{Id:int}/posiciones"
+@inherits TorneoPosicionesBase
+
+<PageTitle>SRTorneos | Posiciones de @(Torneo?.Nombre ?? "torneo")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="posiciones" />
+    <Avisos Error="@Error" />
+
+    <section class="panel">
+        <header class="panel__header">
+            <h2>Tabla de posiciones</h2>
+            <span class="panel__hint">Victoria = @Torneo.PuntosVictoria pts · Desempate: diferencia y puntos a favor</span>
+        </header>
+
+        @if (Tabla.Count == 0)
+        {
+            <p class="panel__empty">Inscribe equipos para ver la tabla.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="data-table standings">
+                    <thead>
+                        <tr>
+                            <th class="num">#</th><th>Equipo</th>
+                            <th class="num" title="Partidos jugados">PJ</th>
+                            <th class="num" title="Ganados">G</th>
+                            <th class="num" title="Perdidos">P</th>
+                            @if (HayEmpates) { <th class="num" title="Empatados">E</th> }
+                            <th class="num" title="Puntos a favor">PF</th>
+                            <th class="num" title="Puntos en contra">PC</th>
+                            <th class="num" title="Diferencia">DIF</th>
+                            <th class="num">PTS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (fila, lugar) in Tabla.Select((f, i) => (f, i + 1)))
+                        {
+                            <tr class="@(lugar <= 3 && fila.Jugados > 0 ? $"top-{lugar}" : null)">
+                                <td class="num"><span class="rank">@lugar</span></td>
+                                <td><a class="row-title" href="torneos/@Id/equipos/@fila.IdEquipo">@fila.Equipo</a></td>
+                                <td class="num">@fila.Jugados</td>
+                                <td class="num">@fila.Ganados</td>
+                                <td class="num">@fila.Perdidos</td>
+                                @if (HayEmpates) { <td class="num">@fila.Empatados</td> }
+                                <td class="num">@fila.PuntosFavor</td>
+                                <td class="num">@fila.PuntosContra</td>
+                                <td class="num @(fila.Diferencia > 0 ? "text-success" : fila.Diferencia < 0 ? "text-danger" : null)">@(fila.Diferencia > 0 ? "+" : "")@fila.Diferencia</td>
+                                <td class="num"><strong>@fila.Puntos</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}

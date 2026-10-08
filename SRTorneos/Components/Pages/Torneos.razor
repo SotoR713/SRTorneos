@@ -8,28 +8,27 @@
     <a class="btn btn-accent" href="torneos/nuevo">＋ Nuevo torneo</a>
 </section>
 
-@if (Cargando)
+<Avisos Aviso="@Aviso" Error="@Error" />
+
+@if (Error is null && ListaTorneos.Count == 0)
 {
-    <div class="loading-state">Cargando torneos...</div>
+    <section class="empty-state"><div class="empty-ball">🏆</div><h2>Aún no hay torneos</h2><p>Crea tu primer torneo para comenzar a registrar equipos, jugadores y partidos.</p><a class="btn btn-accent" href="torneos/nuevo">Crear mi primer torneo</a></section>
 }
-else if (!string.IsNullOrWhiteSpace(ErrorCarga))
-{
-    <div class="alert alert-danger" role="alert">@ErrorCarga</div>
-}
-else if (Torneos.Count == 0)
-{
-    <section class="empty-state"><div class="empty-ball">🏀</div><h2>Aún no hay torneos</h2><p>Crea tu primer torneo para comenzar a registrar equipos, jugadores y partidos.</p><a class="btn btn-accent" href="torneos/nuevo">Crear mi primer torneo</a></section>
-}
-else
+else if (ListaTorneos.Count > 0)
 {
     <section class="tournament-grid" aria-label="Lista de torneos">
-        @foreach (var torneo in Torneos)
+        @foreach (var torneo in ListaTorneos)
         {
             <article class="tournament-card">
-                <div class="tournament-card__top"><span class="tournament-icon">🏀</span><span class="badge-soft">Activo</span></div>
+                <div class="tournament-card__top">
+                    <span class="tournament-icon">@Presentacion.IconoDeporte(torneo.Deporte)</span>
+                    <span class="badge-estado @Presentacion.ClaseEstado(torneo.Estado)">@Presentacion.EtiquetaEstado(torneo.Estado)</span>
+                </div>
                 <h2>@torneo.Nombre</h2>
-                <p class="tournament-dates">@torneo.FechaInicio.ToString("dd MMM yyyy") — @torneo.FechaFin.ToString("dd MMM yyyy")</p>
-                <a class="stretched-link tournament-link" href="#">Administrar torneo <span>→</span></a>
+                <p class="tournament-meta">@torneo.Deporte · @torneo.TipoTorneo</p>
+                <p class="tournament-dates">@Presentacion.Fecha(torneo.FechaInicio) — @Presentacion.Fecha(torneo.FechaFin)</p>
+                <p class="tournament-stats"><span>@torneo.Equipos equipos</span><span>@torneo.PartidosJugados/@torneo.Partidos partidos</span></p>
+                <a class="stretched-link tournament-link" href="torneos/@torneo.Id">Administrar torneo <span>→</span></a>
             </article>
         }
     </section>

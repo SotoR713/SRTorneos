@@ -1,0 +1,62 @@
+@page "/equipos"
+@inherits EquiposBase
+
+<PageTitle>SRTorneos | Equipos</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">CATÁLOGO</p><h1>Equipos</h1><p>Todos los equipos registrados. Inscríbelos a un torneo desde la pestaña Equipos del torneo.</p></div>
+</section>
+
+<Avisos Aviso="@Aviso" Error="@Error" />
+
+<div class="split-layout">
+    <section class="panel">
+        <header class="panel__header"><h2>Equipos <span class="count-pill">@Lista.Count</span></h2></header>
+        @if (Lista.Count == 0)
+        {
+            <p class="panel__empty">Aún no hay equipos registrados.</p>
+        }
+        else
+        {
+            <form method="post" @formname="eliminar-equipo" @onsubmit="EliminarAsync">
+                <AntiforgeryToken />
+                <table class="data-table">
+                    <thead><tr><th>Equipo</th><th class="num">Torneos</th><th class="actions"></th></tr></thead>
+                    <tbody>
+                        @foreach (var equipo in Lista)
+                        {
+                            <tr class="@(equipo.Id == Editar ? "is-editing" : null)">
+                                <td class="row-title">@equipo.Nombre</td>
+                                <td class="num">@equipo.Torneos</td>
+                                <td class="actions">
+                                    <a class="btn btn-sm btn-light" href="equipos?editar=@equipo.Id">Editar</a>
+                                    @if (equipo.Torneos == 0)
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" name="EliminarId" value="@equipo.Id"
+                                                onclick="return confirm('¿Eliminar este equipo?');">Eliminar</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </form>
+        }
+    </section>
+
+    <section class="panel panel--form">
+        <header class="panel__header"><h2>@(EnEdicion ? "Editar equipo" : "Nuevo equipo")</h2></header>
+        @if (FormEquipo is not null)
+        {
+            <EditForm Model="FormEquipo" FormName="equipo" OnValidSubmit="GuardarAsync">
+                <DataAnnotationsValidator />
+                <input type="hidden" name="FormEquipo.Id" value="@FormEquipo.Id" />
+                <div class="form-field"><label for="nombreEquipo">Nombre</label><InputText id="nombreEquipo" class="form-control" @bind-Value="FormEquipo.Nombre" maxlength="20" /><ValidationMessage For="@(() => FormEquipo.Nombre)" /></div>
+                <div class="form-actions">
+                    @if (EnEdicion) { <a class="btn btn-light" href="equipos">Cancelar</a> }
+                    <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Crear equipo")</button>
+                </div>
+            </EditForm>
+        }
+    </section>
+</div>

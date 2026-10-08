@@ -1,0 +1,89 @@
+@page "/catalogos"
+@page "/catalogos/{Clave}"
+@using SRTorneos.Repositories
+@inherits CatalogosBase
+
+<PageTitle>SRTorneos | @(Definicion?.Titulo ?? "Catálogos")</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">CATÁLOGOS</p><h1>Catálogos del sistema</h1><p>Valores que se eligen en las listas desplegables de torneos, inscripciones y partidos.</p></div>
+</section>
+
+<nav class="tabs mb-4" aria-label="Catálogos">
+    @foreach (var catalogo in CatalogosEditables.Todos)
+    {
+        <a class="tab @(catalogo == Definicion ? "active" : null)" href="catalogos/@catalogo.Clave">@catalogo.Titulo</a>
+    }
+</nav>
+
+@if (Definicion is not null)
+{
+    <Avisos Aviso="@Aviso" Error="@Error" />
+
+    <div class="split-layout">
+        <section class="panel">
+            <header class="panel__header"><h2>@Definicion.Titulo <span class="count-pill">@Lista.Count</span></h2></header>
+            <p class="panel__hint">@Definicion.Descripcion</p>
+
+            @if (Lista.Count == 0)
+            {
+                <p class="panel__empty">Todavía no hay registros. Agrega el primero con el formulario.</p>
+            }
+            else
+            {
+                <form method="post" @formname="eliminar-catalogo" @onsubmit="EliminarAsync">
+                    <AntiforgeryToken />
+                    <table class="data-table">
+                        <thead><tr><th>@(Definicion.Numerico ? "Puesto" : "Nombre")</th><th class="num">En uso</th><th class="actions"></th></tr></thead>
+                        <tbody>
+                            @foreach (var elemento in Lista)
+                            {
+                                <tr class="@(elemento.Id == Editar ? "is-editing" : null)">
+                                    <td class="row-title">@Mostrar(elemento.Valor)</td>
+                                    <td class="num">@elemento.Usos <small class="text-muted">@Definicion.DondeSeUsa</small></td>
+                                    <td class="actions">
+                                        <a class="btn btn-sm btn-light" href="catalogos/@Definicion.Clave?editar=@elemento.Id">Editar</a>
+                                        @if (elemento.Usos == 0)
+                                        {
+                                            <button class="btn btn-sm btn-outline-danger" type="submit" name="EliminarId" value="@elemento.Id"
+                                                    onclick="return confirm('¿Eliminar este registro?');">Eliminar</button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </form>
+            }
+        </section>
+
+        <section class="panel panel--form">
+            <header class="panel__header"><h2>@(EnEdicion ? $"Editar {Definicion.Singular}" : $"Nuevo {Definicion.Singular}")</h2></header>
+            @if (FormCatalogo is not null)
+            {
+                <EditForm Model="FormCatalogo" FormName="catalogo" OnValidSubmit="GuardarAsync">
+                    <DataAnnotationsValidator />
+                    <input type="hidden" name="FormCatalogo.Id" value="@FormCatalogo.Id" />
+                    <div class="form-field">
+                        <label for="valor">@(Definicion.Numerico ? "Número de puesto" : "Nombre")</label>
+                        @if (Definicion.Numerico)
+                        {
+                            <InputText id="valor" class="form-control" type="number" min="0" max="999" @bind-Value="FormCatalogo.Valor" />
+                            <small class="field-hint">0 = Sin definir, 1 = primer lugar, 2 = segundo…</small>
+                        }
+                        else
+                        {
+                            <InputText id="valor" class="form-control" maxlength="@Definicion.LargoMaximo" @bind-Value="FormCatalogo.Valor" />
+                            <small class="field-hint">Máximo @Definicion.LargoMaximo caracteres.</small>
+                        }
+                        <ValidationMessage For="@(() => FormCatalogo.Valor)" />
+                    </div>
+                    <div class="form-actions">
+                        @if (EnEdicion) { <a class="btn btn-light" href="catalogos/@Definicion.Clave">Cancelar</a> }
+                        <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Agregar")</button>
+                    </div>
+                </EditForm>
+            }
+        </section>
+    </div>
+}

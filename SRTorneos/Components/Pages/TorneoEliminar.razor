@@ -1,0 +1,33 @@
+@page "/torneos/{Id:int}/eliminar"
+@inherits TorneoEliminarBase
+
+<PageTitle>SRTorneos | Eliminar torneo</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <section class="confirm-card">
+        <div class="confirm-icon">!</div>
+        <h1>¿Eliminar «@Torneo.Nombre»?</h1>
+        <p>Esta acción no se puede deshacer. También se eliminarán:</p>
+        <ul class="confirm-list">
+            <li><strong>@Torneo.Equipos</strong> inscripciones de equipos <small>(los equipos siguen en el catálogo)</small></li>
+            <li><strong>@Torneo.Jugadores</strong> jugadores alineados</li>
+            <li><strong>@Torneo.Partidos</strong> partidos con sus resultados, anotaciones y faltas</li>
+            <li>La configuración del torneo</li>
+        </ul>
+
+        <Avisos Error="@Error" />
+
+        <form method="post" @formname="eliminar-torneo" @onsubmit="EliminarAsync">
+            <AntiforgeryToken />
+            <div class="form-actions">
+                <a class="btn btn-light" href="torneos/@Torneo.Id">Cancelar</a>
+                <button class="btn btn-danger" type="submit">Sí, eliminar torneo</button>
+            </div>
+        </form>
+    </section>
+}

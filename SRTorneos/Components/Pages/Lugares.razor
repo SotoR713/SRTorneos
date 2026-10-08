@@ -1,0 +1,64 @@
+@page "/lugares"
+@inherits LugaresBase
+
+<PageTitle>SRTorneos | Lugares</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">CATÁLOGO</p><h1>Lugares</h1><p>Canchas y sedes donde se juegan los partidos.</p></div>
+</section>
+
+<Avisos Aviso="@Aviso" Error="@Error" />
+
+<div class="split-layout">
+    <section class="panel">
+        <header class="panel__header"><h2>Lugares <span class="count-pill">@Lista.Count</span></h2></header>
+        @if (Lista.Count == 0)
+        {
+            <p class="panel__empty">Aún no hay lugares registrados. Necesitas al menos uno para programar partidos.</p>
+        }
+        else
+        {
+            <form method="post" @formname="eliminar-lugar" @onsubmit="EliminarAsync">
+                <AntiforgeryToken />
+                <table class="data-table">
+                    <thead><tr><th>Lugar</th><th>Dirección</th><th class="num">Partidos</th><th class="actions"></th></tr></thead>
+                    <tbody>
+                        @foreach (var lugar in Lista)
+                        {
+                            <tr class="@(lugar.Id == Editar ? "is-editing" : null)">
+                                <td class="row-title">@lugar.Nombre</td>
+                                <td>@lugar.Direccion</td>
+                                <td class="num">@lugar.Partidos</td>
+                                <td class="actions">
+                                    <a class="btn btn-sm btn-light" href="lugares?editar=@lugar.Id">Editar</a>
+                                    @if (lugar.Partidos == 0)
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" name="EliminarId" value="@lugar.Id"
+                                                onclick="return confirm('¿Eliminar este lugar?');">Eliminar</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </form>
+        }
+    </section>
+
+    <section class="panel panel--form">
+        <header class="panel__header"><h2>@(EnEdicion ? "Editar lugar" : "Nuevo lugar")</h2></header>
+        @if (FormLugar is not null)
+        {
+            <EditForm Model="FormLugar" FormName="lugar" OnValidSubmit="GuardarAsync">
+                <DataAnnotationsValidator />
+                <input type="hidden" name="FormLugar.Id" value="@FormLugar.Id" />
+                <div class="form-field"><label for="nombreLugar">Nombre</label><InputText id="nombreLugar" class="form-control" @bind-Value="FormLugar.Nombre" maxlength="20" placeholder="Ej. Gimnasio Central" /><ValidationMessage For="@(() => FormLugar.Nombre)" /></div>
+                <div class="form-field"><label for="direccion">Dirección</label><InputText id="direccion" class="form-control" @bind-Value="FormLugar.Direccion" maxlength="50" /><ValidationMessage For="@(() => FormLugar.Direccion)" /></div>
+                <div class="form-actions">
+                    @if (EnEdicion) { <a class="btn btn-light" href="lugares">Cancelar</a> }
+                    <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Crear lugar")</button>
+                </div>
+            </EditForm>
+        }
+    </section>
+</div>

@@ -1,0 +1,114 @@
+@page "/torneos/{Id:int}/equipos/{IdEquipo:int}"
+@inherits TorneoPlantillaBase
+
+<PageTitle>SRTorneos | Plantilla de @(Equipo?.Nombre ?? "equipo")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="equipos" />
+
+    @if (Equipo is null)
+    {
+        <Avisos Error="@Error" />
+    }
+    else
+    {
+        <section class="sub-heading">
+            <a class="back-link" href="torneos/@Id/equipos">← Equipos inscritos</a>
+            <h2>@Equipo.Nombre <span class="count-pill">@Plantilla.Count jugadores</span></h2>
+            <p>@Equipo.Estado · Puesto @Presentacion.Puesto(Equipo.Puesto)</p>
+        </section>
+
+        <Avisos Aviso="@Aviso" Error="@Error" />
+
+        <div class="split-layout">
+            <section class="panel">
+                <header class="panel__header"><h2>Plantilla</h2></header>
+                @if (Plantilla.Count == 0)
+                {
+                    <p class="panel__empty">Este equipo aún no tiene jugadores. Agrega el primero con el formulario.</p>
+                }
+                else
+                {
+                    <form method="post" @formname="quitar-jugador" @onsubmit="QuitarAsync">
+                        <AntiforgeryToken />
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead><tr><th class="num">#</th><th>Jugador</th><th>Posición</th><th class="num">Puntos</th><th class="num">Faltas</th><th class="actions"></th></tr></thead>
+                                <tbody>
+                                    @foreach (var jugador in Plantilla)
+                                    {
+                                        <tr class="@(jugador.IdJugador == Editar ? "is-editing" : null)">
+                                            <td class="num"><span class="jersey">@jugador.Numero</span></td>
+                                            <td class="row-title">@jugador.Nombre</td>
+                                            <td>@jugador.Posicion</td>
+                                            <td class="num">@jugador.Puntos</td>
+                                            <td class="num">@jugador.Faltas</td>
+                                            <td class="actions">
+                                                <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@IdEquipo?editar=@jugador.IdJugador">Editar</a>
+                                                @if (jugador.Puntos == 0 && jugador.Faltas == 0)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-danger" type="submit" name="QuitarIdJugador" value="@jugador.IdJugador"
+                                                            onclick="return confirm('¿Quitar a este jugador de la plantilla?');">Quitar</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                }
+            </section>
+
+            <div class="stack">
+                <section class="panel panel--form">
+                    <header class="panel__header"><h2>@(EnEdicion ? "Editar jugador" : "Agregar jugador nuevo")</h2></header>
+                    @if (FormJugador is not null)
+                    {
+                        <EditForm Model="FormJugador" FormName="jugador" OnValidSubmit="GuardarAsync">
+                            <DataAnnotationsValidator />
+                            <input type="hidden" name="FormJugador.Id" value="@FormJugador.Id" />
+                            <div class="form-grid form-grid--numero">
+                                <div class="form-field"><label for="numero">Número</label><InputNumber id="numero" class="form-control" @bind-Value="FormJugador.Numero" min="0" max="999" /><ValidationMessage For="@(() => FormJugador.Numero)" /></div>
+                                <div class="form-field"><label for="nombreJugador">Nombre</label><InputText id="nombreJugador" class="form-control" @bind-Value="FormJugador.Nombre" maxlength="50" /><ValidationMessage For="@(() => FormJugador.Nombre)" /></div>
+                            </div>
+                            <div class="form-field">
+                                <label for="posicion">Posición</label>
+                                <InputText id="posicion" class="form-control" @bind-Value="FormJugador.Posicion" maxlength="20" list="posiciones-sugeridas" />
+                                <datalist id="posiciones-sugeridas">@foreach (var posicion in Presentacion.PosicionesSugeridas(Torneo.Deporte)) { <option value="@posicion"></option> }</datalist>
+                                <ValidationMessage For="@(() => FormJugador.Posicion)" />
+                            </div>
+                            <div class="form-actions">
+                                @if (EnEdicion) { <a class="btn btn-light" href="torneos/@Id/equipos/@IdEquipo">Cancelar</a> }
+                                <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Agregar")</button>
+                            </div>
+                        </EditForm>
+                    }
+                </section>
+
+                @if (!EnEdicion && Disponibles.Count > 0)
+                {
+                    <section class="panel panel--form">
+                        <header class="panel__header"><h2>Agregar jugador existente</h2></header>
+                        <p class="panel__hint">Jugadores registrados que no están en ningún equipo de este torneo.</p>
+                        <form method="post" @formname="alinear-existente" @onsubmit="AlinearExistenteAsync">
+                            <AntiforgeryToken />
+                            <div class="inline-form">
+                                <select class="form-select" name="AlinearIdJugador" aria-label="Jugador existente">
+                                    <option value="0">— Selecciona —</option>
+                                    @foreach (var jugador in Disponibles) { <option value="@jugador.Id">#@jugador.Numero · @jugador.Nombre (@jugador.Posicion)</option> }
+                                </select>
+                                <button class="btn btn-accent" type="submit">Agregar</button>
+                            </div>
+                        </form>
+                    </section>
+                }
+            </div>
+        </div>
+    }
+}

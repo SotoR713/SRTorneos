@@ -1,0 +1,172 @@
+@page "/torneos/{Id:int}/partidos/{IdPartido:int}"
+@inherits PartidoDetalleBase
+
+<PageTitle>SRTorneos | @(Partido is null ? "Partido" : $"{Partido.Equipo1} vs {Partido.Equipo2}")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="partidos" />
+
+    @if (Partido is null)
+    {
+        <Avisos Error="@Error" />
+    }
+    else
+    {
+        <section class="sub-heading">
+            <a class="back-link" href="torneos/@Id/partidos">← Calendario</a>
+        </section>
+
+        <section class="scoreboard">
+            <div class="scoreboard__team @(Partido.GanoLocal ? "winner" : null)">
+                <small>LOCAL</small><strong>@Partido.Equipo1</strong>
+            </div>
+            <div class="scoreboard__score">
+                @if (Partido.Jugado)
+                {
+                    <span>@Partido.Puntos1</span><em>–</em><span>@Partido.Puntos2</span>
+                }
+                else
+                {
+                    <span class="pending">Pendiente</span>
+                }
+                <small>@Presentacion.FechaHora(Partido.Fecha) · @Partido.Lugar</small>
+            </div>
+            <div class="scoreboard__team @(Partido.GanoVisitante ? "winner" : null)">
+                <small>VISITANTE</small><strong>@Partido.Equipo2</strong>
+            </div>
+        </section>
+
+        <Avisos Aviso="@Aviso" Error="@Error" />
+
+        <section class="panel">
+            <header class="panel__header">
+                <h2>Resultado</h2>
+                <a href="torneos/@Id/partidos?editar=@Partido.Id">Cambiar fecha, equipos o lugar →</a>
+            </header>
+
+            @if (FormResultado is not null)
+            {
+                <EditForm Model="FormResultado" FormName="resultado" OnValidSubmit="GuardarResultadoAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="validation-summary" />
+
+                    <div class="result-grid">
+                        @foreach (var (idEquipo, nombre, esLocal) in Lados)
+                        {
+                            <div class="result-team">
+                                <div class="result-team__head">
+                                    <h3>@nombre</h3>
+                                    @if (esLocal)
+                                    {
+                                        <InputNumber class="form-control score-input" @bind-Value="FormResultado.Puntos1" min="0" max="999" aria-label="@($"Puntos de {nombre}")" />
+                                    }
+                                    else
+                                    {
+                                        <InputNumber class="form-control score-input" @bind-Value="FormResultado.Puntos2" min="0" max="999" aria-label="@($"Puntos de {nombre}")" />
+                                    }
+                                </div>
+
+                                @if (JugadoresDe(idEquipo).Count == 0)
+                                {
+                                    <p class="panel__empty">Sin jugadores en la plantilla. <a href="torneos/@Id/equipos/@idEquipo">Agregar jugadores</a></p>
+                                }
+                                else
+                                {
+                                    <table class="data-table data-table--compact">
+                                        <thead><tr><th class="num">#</th><th>Jugador</th><th class="num">Puntos</th></tr></thead>
+                                        <tbody>
+                                            @for (int i = 0; i < FormResultado.Anotaciones.Count; i++)
+                                            {
+                                                var indice = i;
+                                                var fila = FormResultado.Anotaciones[indice];
+                                                if (!JugadoresPorId.TryGetValue(fila.IdJugador, out var jugador) || jugador.IdEquipo != idEquipo) continue;
+                                                <tr>
+                                                    <td class="num"><span class="jersey">@jugador.Numero</span></td>
+                                                    <td>@jugador.Nombre<input type="hidden" name="FormResultado.Anotaciones[@indice].IdJugador" value="@fila.IdJugador" /></td>
+                                                    <td class="num"><InputNumber class="form-control form-control-sm points-input" @bind-Value="FormResultado.Anotaciones[indice].Puntos" min="0" max="999" aria-label="@($"Puntos de {jugador.Nombre}")" /></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <p class="field-hint">Los puntos por jugador son opcionales. Si los capturas, su suma debe coincidir con el marcador del equipo.</p>
+
+                    <div class="form-actions">
+                        <button class="btn btn-accent" type="submit">Guardar resultado</button>
+                    </div>
+                </EditForm>
+
+                @if (Partido.Jugado)
+                {
+                    <form method="post" @formname="borrar-resultado" @onsubmit="BorrarResultadoAsync" class="text-end mt-2">
+                        <AntiforgeryToken />
+                        <button class="btn btn-link text-danger" type="submit" onclick="return confirm('¿Borrar el resultado? El partido volverá a quedar pendiente.');">Borrar resultado</button>
+                    </form>
+                }
+            }
+        </section>
+
+        <section class="panel">
+            <header class="panel__header"><h2>Faltas <span class="count-pill">@Faltas.Count</span></h2></header>
+
+            @if (TiposFalta.Count == 0)
+            {
+                <p class="panel__empty">Para registrar faltas agrega al menos un <a href="catalogos/tipos-falta">tipo de falta</a>.</p>
+            }
+            else if (JugadoresPorId.Count > 0 && FormFalta is not null)
+            {
+                <EditForm Model="FormFalta" FormName="falta" OnValidSubmit="RegistrarFaltaAsync" class="inline-form inline-form--wrap">
+                    <DataAnnotationsValidator />
+                    <InputSelect class="form-select" @bind-Value="FormFalta.IdJugador" aria-label="Jugador">
+                        <option value="0">Jugador…</option>
+                        @foreach (var (idEquipo, nombre, _) in Lados)
+                        {
+                            <optgroup label="@nombre">
+                                @foreach (var jugador in JugadoresDe(idEquipo)) { <option value="@jugador.IdJugador">#@jugador.Numero @jugador.Nombre</option> }
+                            </optgroup>
+                        }
+                    </InputSelect>
+                    <InputSelect class="form-select" @bind-Value="FormFalta.IdTipoFalta" aria-label="Tipo de falta">
+                        <option value="0">Tipo de falta…</option>
+                        @foreach (var tipo in TiposFalta) { <option value="@tipo.Id">@tipo.Nombre</option> }
+                    </InputSelect>
+                    <button class="btn btn-accent" type="submit">Registrar falta</button>
+                    <ValidationSummary class="validation-summary w-100" />
+                </EditForm>
+            }
+
+            @if (Faltas.Count > 0)
+            {
+                <form method="post" @formname="eliminar-falta" @onsubmit="EliminarFaltaAsync">
+                    <AntiforgeryToken />
+                    <div class="table-responsive mt-3">
+                    <table class="data-table data-table--compact">
+                        <thead><tr><th class="num">#</th><th>Jugador</th><th>Equipo</th><th>Tipo</th><th class="actions"></th></tr></thead>
+                        <tbody>
+                            @foreach (var falta in Faltas)
+                            {
+                                <tr>
+                                    <td class="num"><span class="jersey">@falta.Numero</span></td>
+                                    <td>@falta.Jugador</td>
+                                    <td>@falta.Equipo</td>
+                                    <td><span class="badge-soft badge-soft--warn">@falta.TipoFalta</span></td>
+                                    <td class="actions"><button class="btn btn-sm btn-link text-danger" type="submit" name="EliminarIdFalta" value="@falta.Id">Quitar</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    </div>
+                </form>
+            }
+        </section>
+    }
+}

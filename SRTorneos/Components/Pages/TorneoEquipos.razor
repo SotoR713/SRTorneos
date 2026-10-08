@@ -1,0 +1,131 @@
+@page "/torneos/{Id:int}/equipos"
+@inherits TorneoEquiposBase
+
+<PageTitle>SRTorneos | Equipos de @(Torneo?.Nombre ?? "torneo")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="equipos" />
+    <Avisos Aviso="@Aviso" Error="@Error" />
+
+    @if (FaltanCatalogos)
+    {
+        <div class="alert alert-warning" role="alert">
+            Para inscribir equipos necesitas al menos un registro en
+            @if (Estados.Count == 0) { <a href="catalogos/estados"><strong>Estados</strong></a> }
+            @if (Estados.Count == 0 && Puestos.Count == 0) { <span> y </span> }
+            @if (Puestos.Count == 0) { <a href="catalogos/puestos"><strong>Puestos</strong></a> }.
+            Créalos en <a href="catalogos">Otros catálogos</a>.
+        </div>
+    }
+
+    <div class="split-layout">
+        <section class="panel">
+            <header class="panel__header">
+                <h2>Equipos inscritos <span class="count-pill">@(Torneo.EquiposMax is > 0 ? $"{Inscritos.Count} / {Torneo.EquiposMax}" : $"{Inscritos.Count}")</span></h2>
+            </header>
+
+            @if (Inscritos.Count == 0)
+            {
+                <p class="panel__empty">Todavía no hay equipos inscritos. Usa el formulario para inscribir el primero.</p>
+            }
+            else
+            {
+                <form method="post" @formname="quitar-equipo" @onsubmit="QuitarAsync">
+                    <AntiforgeryToken />
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead><tr><th>Equipo</th><th class="num">Jugadores</th><th class="num">Partidos</th><th>Estado</th><th>Puesto</th><th class="actions"></th></tr></thead>
+                            <tbody>
+                                @foreach (var equipo in Inscritos)
+                                {
+                                    <tr class="@(equipo.IdEquipo == Editar ? "is-editing" : null)">
+                                        <td><a class="row-title" href="torneos/@Id/equipos/@equipo.IdEquipo">@equipo.Nombre</a></td>
+                                        <td class="num">@equipo.Jugadores</td>
+                                        <td class="num">@equipo.Partidos</td>
+                                        <td><span class="badge-soft">@equipo.Estado</span></td>
+                                        <td>@Presentacion.Puesto(equipo.Puesto)</td>
+                                        <td class="actions">
+                                            <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@equipo.IdEquipo">Plantilla</a>
+                                            <a class="btn btn-sm btn-light" href="torneos/@Id/equipos?editar=@equipo.IdEquipo">Editar</a>
+                                            @if (equipo.Partidos == 0)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" type="submit" name="QuitarIdEquipo" value="@equipo.IdEquipo"
+                                                        onclick="return confirm('¿Quitar este equipo del torneo? También se quitará su plantilla.');">Quitar</button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            }
+        </section>
+
+        <section class="panel panel--form">
+            @if (FormInscripcion is not null)
+            {
+                <header class="panel__header"><h2>@(EnEdicion ? $"Editar inscripción: {EquipoEnEdicion?.Nombre}" : "Inscribir equipo")</h2></header>
+
+                @if (!EnEdicion && Torneo.CupoLleno)
+                {
+                    <p class="panel__empty">El torneo alcanzó su cupo de @Torneo.EquiposMax equipos. Puedes ampliarlo en <a href="torneos/@Id/editar">Editar torneo</a>.</p>
+                }
+                else
+                {
+                    <EditForm Model="FormInscripcion" FormName="inscripcion" OnValidSubmit="GuardarAsync">
+                        <DataAnnotationsValidator />
+                        <input type="hidden" name="FormInscripcion.IdInscripcion" value="@FormInscripcion.IdInscripcion" />
+
+                        @if (!EnEdicion)
+                        {
+                            <div class="form-field">
+                                <label for="equipo">Equipo existente</label>
+                                <InputSelect id="equipo" class="form-select" @bind-Value="FormInscripcion.IdEquipo">
+                                    <option value="0">— Selecciona —</option>
+                                    @foreach (var equipo in Disponibles) { <option value="@equipo.Id">@equipo.Nombre</option> }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => FormInscripcion.IdEquipo)" />
+                            </div>
+                            <div class="form-divider"><span>o crea uno nuevo</span></div>
+                            <div class="form-field">
+                                <label for="nuevoEquipo">Nombre del equipo nuevo</label>
+                                <InputText id="nuevoEquipo" class="form-control" @bind-Value="FormInscripcion.NuevoEquipo" maxlength="20" placeholder="Ej. Halcones" />
+                                <ValidationMessage For="@(() => FormInscripcion.NuevoEquipo)" />
+                            </div>
+                        }
+
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label for="estado">Estado</label>
+                                <InputSelect id="estado" class="form-select" @bind-Value="FormInscripcion.IdEstado">
+                                    <option value="0">— Selecciona —</option>
+                                    @foreach (var estado in Estados) { <option value="@estado.Id">@estado.Nombre</option> }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => FormInscripcion.IdEstado)" />
+                            </div>
+                            <div class="form-field">
+                                <label for="puesto">Puesto</label>
+                                <InputSelect id="puesto" class="form-select" @bind-Value="FormInscripcion.IdPuesto">
+                                    <option value="0">— Selecciona —</option>
+                                    @foreach (var puesto in Puestos) { <option value="@puesto.Id">@puesto.Nombre</option> }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => FormInscripcion.IdPuesto)" />
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            @if (EnEdicion) { <a class="btn btn-light" href="torneos/@Id/equipos">Cancelar</a> }
+                            <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Inscribir")</button>
+                        </div>
+                    </EditForm>
+                }
+            }
+        </section>
+    </div>
+}

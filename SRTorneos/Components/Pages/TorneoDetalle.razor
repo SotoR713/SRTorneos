@@ -1,0 +1,110 @@
+@page "/torneos/{Id:int}"
+@inherits TorneoDetalleBase
+
+<PageTitle>SRTorneos | @(Torneo?.Nombre ?? "Torneo")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="resumen" />
+    <Avisos Aviso="@Aviso" Error="@Error" />
+
+    <section class="stat-grid">
+        <div class="stat-card"><small>Equipos</small><strong>@Torneo.Equipos<span class="stat-of">/ @(Torneo.EquiposMax?.ToString() ?? "—")</span></strong></div>
+        <div class="stat-card"><small>Jugadores</small><strong>@Torneo.Jugadores</strong></div>
+        <div class="stat-card"><small>Partidos jugados</small><strong>@Torneo.PartidosJugados<span class="stat-of">/ @Torneo.Partidos</span></strong></div>
+        <div class="stat-card"><small>Puntos por victoria</small><strong>@Torneo.PuntosVictoria</strong></div>
+        <div class="stat-card"><small>Creado por</small><strong>@Torneo.Creador</strong></div>
+    </section>
+
+    @if (Torneo.Equipos < 2)
+    {
+        <section class="next-step">
+            <span class="quick-icon">1</span>
+            <div><strong>Inscribe al menos dos equipos</strong><small>Después podrás cargar sus plantillas y programar partidos.</small></div>
+            <a class="btn btn-accent" href="torneos/@Torneo.Id/equipos">Inscribir equipos</a>
+        </section>
+    }
+    else if (Torneo.Partidos == 0)
+    {
+        <section class="next-step">
+            <span class="quick-icon">2</span>
+            <div><strong>Programa el primer partido</strong><small>Elige equipos, fecha y lugar.</small></div>
+            <a class="btn btn-accent" href="torneos/@Torneo.Id/partidos">Programar partidos</a>
+        </section>
+    }
+
+    <div class="panel-grid">
+        <section class="panel">
+            <header class="panel__header"><h2>Próximos partidos</h2><a href="torneos/@Torneo.Id/partidos">Ver todos →</a></header>
+            @if (Proximos.Count == 0)
+            {
+                <p class="panel__empty">No hay partidos pendientes.</p>
+            }
+            else
+            {
+                <ul class="match-list">
+                    @foreach (var partido in Proximos)
+                    {
+                        <li>
+                            <a href="torneos/@Torneo.Id/partidos/@partido.Id">
+                                <span class="match-list__date">@Presentacion.FechaCorta(partido.Fecha)<small>@Presentacion.Hora(partido.Fecha)</small></span>
+                                <span class="match-list__teams">@partido.Equipo1 <em>vs</em> @partido.Equipo2</span>
+                                <span class="match-list__place">@partido.Lugar</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="panel">
+            <header class="panel__header"><h2>Últimos resultados</h2><a href="torneos/@Torneo.Id/posiciones">Posiciones →</a></header>
+            @if (Recientes.Count == 0)
+            {
+                <p class="panel__empty">Aún no hay resultados capturados.</p>
+            }
+            else
+            {
+                <ul class="match-list">
+                    @foreach (var partido in Recientes)
+                    {
+                        <li>
+                            <a href="torneos/@Torneo.Id/partidos/@partido.Id">
+                                <span class="match-list__date">@Presentacion.FechaCorta(partido.Fecha)</span>
+                                <span class="match-list__teams">
+                                    <b class="@(partido.GanoLocal ? "winner" : null)">@partido.Equipo1 @partido.Puntos1</b>
+                                    <em>–</em>
+                                    <b class="@(partido.GanoVisitante ? "winner" : null)">@partido.Puntos2 @partido.Equipo2</b>
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="panel">
+            <header class="panel__header"><h2>Líderes de anotación</h2></header>
+            @if (Lideres.Count == 0)
+            {
+                <p class="panel__empty">Captura los puntos por jugador en los resultados para ver a los líderes.</p>
+            }
+            else
+            {
+                <table class="data-table data-table--compact">
+                    <thead><tr><th>#</th><th>Jugador</th><th class="num">Pts</th><th class="num">Prom.</th></tr></thead>
+                    <tbody>
+                        @foreach (var (anotador, indice) in Lideres.Select((a, i) => (a, i + 1)))
+                        {
+                            <tr><td>@indice</td><td><strong>@anotador.Nombre</strong><small class="d-block text-muted">#@anotador.Numero · @anotador.Equipo</small></td><td class="num">@anotador.Puntos</td><td class="num">@anotador.Promedio</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+    </div>
+}

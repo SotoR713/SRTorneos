@@ -1,0 +1,41 @@
+@* Encabezado común de las páginas de un torneo: título, acciones y pestañas. *@
+
+<section class="torneo-header">
+    <a class="back-link" href="torneos">← Torneos</a>
+    <div class="torneo-header__main">
+        <div class="detail-title">
+            <span class="tournament-icon tournament-icon--lg">@Presentacion.IconoDeporte(Torneo.Deporte)</span>
+            <div>
+                <p class="eyebrow text-accent">@Torneo.Deporte.ToUpperInvariant() · @Torneo.TipoTorneo.ToUpperInvariant()</p>
+                <h1>@Torneo.Nombre</h1>
+                <p class="torneo-header__meta">
+                    <span class="badge-estado @Presentacion.ClaseEstado(Torneo.Estado)">@Presentacion.EtiquetaEstado(Torneo.Estado)</span>
+                    @Presentacion.Fecha(Torneo.FechaInicio) — @Presentacion.Fecha(Torneo.FechaFin)
+                </p>
+            </div>
+        </div>
+        <div class="heading-actions">
+            <a class="btn btn-light" href="torneos/@Torneo.Id/editar">Editar</a>
+            <a class="btn btn-outline-danger" href="torneos/@Torneo.Id/eliminar">Eliminar</a>
+        </div>
+    </div>
+    <nav class="tabs" aria-label="Secciones del torneo">
+        @foreach (var (clave, texto, ruta) in Secciones)
+        {
+            <a class="tab @(clave == Seccion ? "active" : null)" href="@($"torneos/{Torneo.Id}{ruta}")">@texto</a>
+        }
+    </nav>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public TorneoResumen Torneo { get; set; } = default!;
+    [Parameter] public string Seccion { get; set; } = "resumen";
+
+    private static readonly (string Clave, string Texto, string Ruta)[] Secciones =
+    [
+        ("resumen", "Resumen", ""),
+        ("equipos", "Equipos", "/equipos"),
+        ("partidos", "Partidos", "/partidos"),
+        ("posiciones", "Posiciones", "/posiciones")
+    ];
+}

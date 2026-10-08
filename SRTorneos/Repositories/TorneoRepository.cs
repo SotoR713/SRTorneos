@@ -1,42 +1,60 @@
-using System.Data;
 using Microsoft.Data.SqlClient;
 using SRTorneos.Data;
 using SRTorneos.Models;
 
 namespace SRTorneos.Repositories;
 
-public class TorneoRepository(ISqlConnectionFactory connectionFactory) : ITorneoRepository
+public class TorneoRepository(ISqlConnectionFactory connectionFactory)
+    : RepositorioBase(connectionFactory), ITorneoRepository
 {
-    private const string Columnas = "Id, Nombre, FechaInicio, FechaFin, IdDeporte, IdUsuario, IdTipoTorneo";
+    private const string ConsultaResumen = """
+        SELECT t.Id, t.Nombre, t.FechaInicio, t.FechaFin,
+               t.IdDeporte, d.Nombre AS Deporte,
+               t.IdTipoTorneo, tt.Nombre AS TipoTorneo,
+               t.IdUsuario, u.UserName AS Creador,
+               cfg.PuntosVict, cfg.EquiposMax,
+               (SELECT COUNT(*) FROM Inscripciones i WHERE i.IdTorneo = t.Id) AS Equipos,
+               (SELECT COUNT(*) FROM Alineaciones a WHERE a.IdTorneo = t.Id) AS Jugadores,
+               (SELECT COUNT(*) FROM Partidos p WHERE p.IdTorneo = t.Id) AS Partidos,
+               (SELECT COUNT(*) FROM Partidos p
+                 WHERE p.IdTorneo = t.Id
+                   AND EXISTS (SELECT 1 FROM Puntajes s WHERE s.IdPartido = p.Id)) AS PartidosJugados,
+               (SELECT MIN(p.Fecha) FROM Partidos p WHERE p.IdTorneo = t.Id) AS PrimerPartido,
+               (SELECT MAX(p.Fecha) FROM Partidos p WHERE p.IdTorneo = t.Id) AS UltimoPartido
+        FROM Torneos t
+        INNER JOIN Deportes d ON d.Id = t.IdDeporte
+        INNER JOIN TiposTorneos tt ON tt.Id = t.IdTipoTorneo
+        INNER JOIN Usuarios u ON u.Id = t.IdUsuario
+        OUTER APPLY (SELECT TOP (1) c.PuntosVict, c.EquiposMax
+                     FROM ConfigTorn c WHERE c.IdTorneo = t.Id ORDER BY c.Id) cfg
+        """;
 
-    public async Task<int> CrearAsync(Torneo torneo, CancellationToken cancellationToken = default)
+    public Task<List<TorneoResumen>> ObtenerResumenesAsync(CancellationToken cancellationToken = default)
+        => ConsultarAsync($"{ConsultaResumen} ORDER BY t.FechaInicio DESC, t.Nombre;",
+            MapearResumen, cancellationToken: cancellationToken);
+
+    public Task<TorneoResumen?> ObtenerResumenAsync(int id, CancellationToken cancellationToken = default)
+        => ConsultarUnoAsync($"{ConsultaResumen} WHERE t.Id = @id;",
+            MapearResumen, p => p.Entero("@id", id), cancellationToken);
+
+    public Task<int> CrearAsync(Torneo torneo, int puntosVictoria, int equiposMax, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        const string sqlTorneo = """
             INSERT INTO Torneos (Nombre, FechaInicio, FechaFin, IdDeporte, IdUsuario, IdTipoTorneo)
             OUTPUT INSERTED.Id
             VALUES (@nombre, @fechaInicio, @fechaFin, @idDeporte, @idUsuario, @idTipoTorneo);
             """;
 
-        await using SqlConnection conexion = connectionFactory.CrearConexion();
-        await conexion.OpenAsync(cancellationToken);
-        await using var comando = new SqlCommand(sql, conexion);
-        AgregarParametrosTorneo(comando, torneo);
-        return Convert.ToInt32(await comando.ExecuteScalarAsync(cancellationToken));
+        return EnTransaccionAsync(async (conexion, transaccion) =>
+        {
+            int id = await EscalarEnteroAsync(conexion, transaccion, sqlTorneo,
+                p => AgregarParametrosTorneo(p, torneo), cancellationToken);
+            await GuardarConfiguracionAsync(conexion, transaccion, id, torneo.IdTipoTorneo, puntosVictoria, equiposMax, cancellationToken);
+            return id;
+        }, cancellationToken);
     }
 
-    public async Task<Torneo?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default)
-    {
-        string sql = $"SELECT {Columnas} FROM Torneos WHERE Id = @id;";
-        await using SqlConnection conexion = connectionFactory.CrearConexion();
-        await conexion.OpenAsync(cancellationToken);
-        await using var comando = new SqlCommand(sql, conexion);
-        comando.Parameters.Add("@id", SqlDbType.Int).Value = id;
-        await using SqlDataReader lector = await comando.ExecuteReaderAsync(cancellationToken);
-
-        return await lector.ReadAsync(cancellationToken) ? CrearDesdeLector(lector) : null;
-    }
-
-    public async Task<bool> ActualizarAsync(Torneo torneo, CancellationToken cancellationToken = default)
+    public Task<bool> ActualizarAsync(Torneo torneo, int puntosVictoria, int equiposMax, CancellationToken cancellationToken = default)
     {
         const string sql = """
             UPDATE Torneos
@@ -44,69 +62,94 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory) : ITorneo
                 IdDeporte = @idDeporte, IdUsuario = @idUsuario, IdTipoTorneo = @idTipoTorneo
             WHERE Id = @id;
             """;
-        await using SqlConnection conexion = connectionFactory.CrearConexion();
-        await conexion.OpenAsync(cancellationToken);
-        await using var comando = new SqlCommand(sql, conexion);
-        AgregarParametrosTorneo(comando, torneo);
-        comando.Parameters.Add("@id", SqlDbType.Int).Value = torneo.Id;
-        return await comando.ExecuteNonQueryAsync(cancellationToken) == 1;
+
+        return EnTransaccionAsync(async (conexion, transaccion) =>
+        {
+            int filas = await EjecutarAsync(conexion, transaccion, sql, p =>
+            {
+                AgregarParametrosTorneo(p, torneo);
+                p.Entero("@id", torneo.Id);
+            }, cancellationToken);
+
+            if (filas != 1) return false;
+
+            await GuardarConfiguracionAsync(conexion, transaccion, torneo.Id, torneo.IdTipoTorneo, puntosVictoria, equiposMax, cancellationToken);
+            return true;
+        }, cancellationToken);
     }
 
-    public async Task<bool> EliminarAsync(int id, CancellationToken cancellationToken = default)
+    public Task<bool> EliminarAsync(int id, CancellationToken cancellationToken = default)
     {
-        const string sql = "DELETE FROM Torneos WHERE Id = @id;";
-        await using SqlConnection conexion = connectionFactory.CrearConexion();
-        await conexion.OpenAsync(cancellationToken);
-        await using var comando = new SqlCommand(sql, conexion);
-        comando.Parameters.Add("@id", SqlDbType.Int).Value = id;
-        return await comando.ExecuteNonQueryAsync(cancellationToken) == 1;
-    }
-
-    public async Task<List<Torneo>> ObtenerTodosAsync(CancellationToken cancellationToken = default)
-    {
-        string sql = $"""
-            SELECT {Columnas}
-            FROM Torneos
-            ORDER BY FechaInicio DESC, Nombre;
+        const string sql = """
+            DELETE a FROM Anotacion a INNER JOIN Partidos p ON p.Id = a.IdPartido WHERE p.IdTorneo = @id;
+            DELETE f FROM Faltas f WHERE f.IdTorneo = @id OR f.IdPartido IN (SELECT Id FROM Partidos WHERE IdTorneo = @id);
+            DELETE s FROM Puntajes s INNER JOIN Partidos p ON p.Id = s.IdPartido WHERE p.IdTorneo = @id;
+            DELETE FROM Partidos WHERE IdTorneo = @id;
+            DELETE FROM Alineaciones WHERE IdTorneo = @id;
+            DELETE FROM Inscripciones WHERE IdTorneo = @id;
+            DELETE FROM ConfigTorn WHERE IdTorneo = @id;
+            DELETE FROM Torneos WHERE Id = @id;
+            SELECT @@ROWCOUNT;
             """;
 
-        var torneos = new List<Torneo>();
-
-        await using SqlConnection conexion = connectionFactory.CrearConexion();
-        await conexion.OpenAsync(cancellationToken);
-
-        await using var comando = new SqlCommand(sql, conexion);
-        await using SqlDataReader lector = await comando.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
-
-        while (await lector.ReadAsync(cancellationToken))
-        {
-            torneos.Add(CrearDesdeLector(lector));
-        }
-
-        return torneos;
+        return EnTransaccionAsync(async (conexion, transaccion) =>
+            await EscalarEnteroAsync(conexion, transaccion, sql, p => p.Entero("@id", id), cancellationToken) == 1,
+            cancellationToken);
     }
 
-    private static void AgregarParametrosTorneo(SqlCommand comando, Torneo torneo)
+    private static async Task GuardarConfiguracionAsync(
+        SqlConnection conexion, SqlTransaction transaccion,
+        int idTorneo, int idTipoTorneo, int puntosVictoria, int equiposMax,
+        CancellationToken cancellationToken)
     {
-        comando.Parameters.Add("@nombre", SqlDbType.VarChar, 50).Value = torneo.Nombre;
-        comando.Parameters.Add("@fechaInicio", SqlDbType.Date).Value = torneo.FechaInicio.ToDateTime(TimeOnly.MinValue);
-        comando.Parameters.Add("@fechaFin", SqlDbType.Date).Value = torneo.FechaFin.ToDateTime(TimeOnly.MinValue);
-        comando.Parameters.Add("@idDeporte", SqlDbType.Int).Value = torneo.IdDeporte;
-        comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = torneo.IdUsuario;
-        comando.Parameters.Add("@idTipoTorneo", SqlDbType.Int).Value = torneo.IdTipoTorneo;
+        const string sql = """
+            UPDATE ConfigTorn
+            SET PuntosVict = @puntosVict, EquiposMax = @equiposMax, IdTipoTorneo = @idTipoTorneo
+            WHERE IdTorneo = @idTorneo;
+
+            IF @@ROWCOUNT = 0
+                INSERT INTO ConfigTorn (IdTorneo, PuntosVict, EquiposMax, IdTipoTorneo)
+                VALUES (@idTorneo, @puntosVict, @equiposMax, @idTipoTorneo);
+            """;
+
+        await EjecutarAsync(conexion, transaccion, sql, p =>
+        {
+            p.Entero("@idTorneo", idTorneo);
+            p.Entero("@puntosVict", puntosVictoria);
+            p.Entero("@equiposMax", equiposMax);
+            p.Entero("@idTipoTorneo", idTipoTorneo);
+        }, cancellationToken);
     }
 
-    private static Torneo CrearDesdeLector(SqlDataReader lector)
+    private static void AgregarParametrosTorneo(SqlParameterCollection p, Torneo torneo)
     {
-        return new Torneo
-        {
-            Id = lector.GetInt32(lector.GetOrdinal("Id")),
-            Nombre = lector.GetString(lector.GetOrdinal("Nombre")),
-            FechaInicio = DateOnly.FromDateTime(lector.GetDateTime(lector.GetOrdinal("FechaInicio"))),
-            FechaFin = DateOnly.FromDateTime(lector.GetDateTime(lector.GetOrdinal("FechaFin"))),
-            IdDeporte = lector.GetInt32(lector.GetOrdinal("IdDeporte")),
-            IdUsuario = lector.GetInt32(lector.GetOrdinal("IdUsuario")),
-            IdTipoTorneo = lector.GetInt32(lector.GetOrdinal("IdTipoTorneo"))
-        };
+        p.Texto("@nombre", torneo.Nombre, 50);
+        p.Fecha("@fechaInicio", torneo.FechaInicio);
+        p.Fecha("@fechaFin", torneo.FechaFin);
+        p.Entero("@idDeporte", torneo.IdDeporte);
+        p.Entero("@idUsuario", torneo.IdUsuario);
+        p.Entero("@idTipoTorneo", torneo.IdTipoTorneo);
     }
+
+    private static TorneoResumen MapearResumen(SqlDataReader l) => new()
+    {
+        Id = l.Entero("Id"),
+        Nombre = l.Texto("Nombre"),
+        FechaInicio = l.Fecha("FechaInicio"),
+        FechaFin = l.Fecha("FechaFin"),
+        IdDeporte = l.Entero("IdDeporte"),
+        Deporte = l.Texto("Deporte"),
+        IdTipoTorneo = l.Entero("IdTipoTorneo"),
+        TipoTorneo = l.Texto("TipoTorneo"),
+        IdUsuario = l.Entero("IdUsuario"),
+        Creador = l.Texto("Creador"),
+        PuntosVict = l.EnteroNulo("PuntosVict"),
+        EquiposMax = l.EnteroNulo("EquiposMax"),
+        Equipos = l.Entero("Equipos"),
+        Jugadores = l.Entero("Jugadores"),
+        Partidos = l.Entero("Partidos"),
+        PartidosJugados = l.Entero("PartidosJugados"),
+        PrimerPartido = l.FechaHoraNula("PrimerPartido"),
+        UltimoPartido = l.FechaHoraNula("UltimoPartido")
+    };
 }

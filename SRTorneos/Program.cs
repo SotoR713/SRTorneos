@@ -10,13 +10,16 @@ namespace SRTorneos
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents();
+            // Blazor con renderizado estático en servidor (SSR): sin circuitos SignalR.
+            builder.Services.AddRazorComponents();
 
             builder.Services.AddScoped<ISqlConnectionFactory, SqlConnectionFactory>();
-            builder.Services.AddScoped<ITorneoRepository, TorneoRepository>();
             builder.Services.AddScoped<ICatalogoRepository, CatalogoRepository>();
+            builder.Services.AddScoped<ITorneoRepository, TorneoRepository>();
+            builder.Services.AddScoped<IEquipoRepository, EquipoRepository>();
+            builder.Services.AddScoped<IJugadorRepository, JugadorRepository>();
+            builder.Services.AddScoped<IPartidoRepository, PartidoRepository>();
+            builder.Services.AddScoped<ILugarRepository, LugarRepository>();
 
             var app = builder.Build();
 
@@ -31,11 +34,13 @@ namespace SRTorneos
             app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
             app.UseHttpsRedirection();
 
+            // Fechas y números en español de México.
+            app.UseRequestLocalization("es-MX");
+
             app.UseAntiforgery();
 
             app.MapStaticAssets();
-            app.MapRazorComponents<App>()
-                .AddInteractiveServerRenderMode();
+            app.MapRazorComponents<App>();
 
             app.Run();
         }

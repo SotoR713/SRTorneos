@@ -1,0 +1,63 @@
+@page "/torneos/nuevo"
+@page "/torneos/{Id:int}/editar"
+@inherits TorneoEditorBase
+
+<PageTitle>SRTorneos | @Titulo</PageTitle>
+
+<section class="page-heading compact-heading">
+    <div>
+        <p class="eyebrow text-accent">@(EsEdicion ? "EDITAR COMPETENCIA" : "NUEVA COMPETENCIA")</p>
+        <h1>@Titulo</h1>
+        <p>@(EsEdicion ? "Actualiza los datos y reglas del torneo." : "Completa la información inicial del torneo.")</p>
+    </div>
+    <a class="back-link" href="@UrlRegreso">← Volver</a>
+</section>
+
+<section class="form-card">
+    @if (Formulario is null)
+    {
+        <Avisos Error="@Error" />
+    }
+    else
+    {
+        @if (FaltanCatalogos)
+        {
+            <div class="alert alert-warning" role="alert">
+                Faltan datos para crear torneos:
+                @if (Deportes.Count == 0) { <a href="catalogos/deportes">agrega un deporte</a><span>. </span> }
+                @if (TiposTorneo.Count == 0) { <a href="catalogos/tipos-torneo">agrega un tipo de torneo</a><span>. </span> }
+                @if (Usuarios.Count == 0) { <span>No hay usuarios: ejecuta <code>BaseDatos\01-datos-iniciales.sql</code> para crear el usuario <strong>admin</strong>.</span> }
+            </div>
+        }
+
+        <EditForm Model="Formulario" FormName="torneo-editor" OnValidSubmit="GuardarAsync">
+            <DataAnnotationsValidator />
+
+            <h2 class="form-section">Datos generales</h2>
+            <div class="form-grid">
+                <div class="form-field full-width"><label for="nombre">Nombre del torneo</label><InputText id="nombre" class="form-control" @bind-Value="Formulario.Nombre" placeholder="Ej. Liga universitaria 2026" maxlength="50" /><ValidationMessage For="@(() => Formulario.Nombre)" /></div>
+                <div class="form-field"><label for="inicio">Fecha de inicio</label><InputDate id="inicio" class="form-control" @bind-Value="Formulario.FechaInicio" /><ValidationMessage For="@(() => Formulario.FechaInicio)" /></div>
+                <div class="form-field"><label for="fin">Fecha de fin</label><InputDate id="fin" class="form-control" @bind-Value="Formulario.FechaFin" /><ValidationMessage For="@(() => Formulario.FechaFin)" /></div>
+                <div class="form-field"><label for="deporte">Deporte</label><InputSelect id="deporte" class="form-select" @bind-Value="Formulario.IdDeporte"><option value="0">Selecciona un deporte</option>@foreach (var deporte in Deportes) { <option value="@deporte.Id">@deporte.Nombre</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdDeporte)" /></div>
+                <div class="form-field"><label for="tipoTorneo">Tipo de torneo</label><InputSelect id="tipoTorneo" class="form-select" @bind-Value="Formulario.IdTipoTorneo"><option value="0">Selecciona un tipo</option>@foreach (var tipo in TiposTorneo) { <option value="@tipo.Id">@tipo.Nombre</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdTipoTorneo)" /></div>
+                <div class="form-field full-width"><label for="usuario">Creador</label><InputSelect id="usuario" class="form-select" @bind-Value="Formulario.IdUsuario"><option value="0">Selecciona un usuario</option>@foreach (var usuario in Usuarios) { <option value="@usuario.Id">@usuario.UserName</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdUsuario)" /></div>
+            </div>
+
+            <h2 class="form-section">Reglas</h2>
+            <div class="form-grid">
+                <div class="form-field"><label for="puntosVict">Puntos por victoria</label><InputNumber id="puntosVict" class="form-control" @bind-Value="Formulario.PuntosVictoria" min="1" max="10" /><small class="field-hint">Se usan para la tabla de posiciones.</small><ValidationMessage For="@(() => Formulario.PuntosVictoria)" /></div>
+                <div class="form-field"><label for="equiposMax">Cupo de equipos</label><InputNumber id="equiposMax" class="form-control" @bind-Value="Formulario.EquiposMax" min="2" max="128" /><small class="field-hint">Máximo de equipos que se pueden inscribir.</small><ValidationMessage For="@(() => Formulario.EquiposMax)" /></div>
+            </div>
+
+            @if (Error is not null)
+            {
+                <div class="alert alert-warning mt-4 mb-0" role="alert">@Error</div>
+            }
+
+            <div class="form-actions">
+                <a class="btn btn-light" href="@UrlRegreso">Cancelar</a>
+                <button class="btn btn-accent" type="submit">@(EsEdicion ? "Guardar cambios" : "Crear torneo")</button>
+            </div>
+        </EditForm>
+    }
+</section>

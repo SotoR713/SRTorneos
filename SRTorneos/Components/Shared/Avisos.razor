@@ -1,0 +1,15 @@
+@* Muestra el aviso de éxito (después de redirigir) o el error de la operación. *@
+
+@if (!string.IsNullOrWhiteSpace(Error))
+{
+    <div class="alert alert-danger" role="alert">@Error</div>
+}
+else if (!string.IsNullOrWhiteSpace(Aviso))
+{
+    <div class="alert alert-success" role="status">@Aviso</div>
+}
+
+@code {
+    [Parameter] public string? Aviso { get; set; }
+    [Parameter] public string? Error { get; set; }
+}

@@ -1,27 +1,10 @@
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-}
-
-a, .btn-link {
-    color: #006bb7;
-}
-
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-.content {
-    padding-top: 1.1rem;
-}
-
+/* ===== Base de Blazor (plantilla) ===== */
 h1:focus {
     outline: none;
+}
+
+.btn:focus, .btn:active:focus, .form-control:focus, .form-select:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem #fff, 0 0 0 0.25rem #f5ae77;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -32,29 +15,346 @@ h1:focus {
     outline: 1px solid #e50000;
 }
 
-.validation-message {
-    color: #e50000;
-}
-
 .blazor-error-boundary {
-    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
-    padding: 1rem 1rem 1rem 3.7rem;
+    background: #b32121;
+    padding: 1rem;
     color: white;
 }
 
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
+.blazor-error-boundary::after {
+    content: "Ocurrió un error.";
+}
+
+/* ===== Estilos de SRTorneos ===== */
+:root {
+    font-family: Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    color: #182a43;
+    background: #f6f7fb;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+}
+
+h1, h2, p {
+    margin-top: 0;
+}
+
+h1 {
+    color: #102a43;
+    font-size: clamp(2rem,4vw,2.75rem);
+    font-weight: 800;
+    letter-spacing: -.04em;
+}
+
+h2 {
+    color: #102a43;
+    font-size: 1.45rem;
+    font-weight: 750;
+}
+
+.eyebrow {
+    margin-bottom: .55rem;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+    color: #c4d0de;
+}
+
+.text-accent {
+    color: #df6514;
+}
+
+.btn {
+    border-radius: .55rem;
+    padding: .7rem 1.05rem;
+    font-weight: 700;
+}
+
+.btn-accent {
+    color: #fff;
+    background: #ed741d;
+    border-color: #ed741d;
+}
+
+.btn-accent:hover {
+    color: #fff;
+    background: #d96311;
+    border-color: #d96311;
+}
+
+.hero-panel {
+    display: flex;
+    justify-content: space-between;
+    min-height: 285px;
+    padding: 3rem;
+    color: #fff;
+    background: linear-gradient(120deg,#102a43,#174a63);
+    border-radius: 1rem;
+}
+
+.hero-panel h1 {
+    color: #fff;
+    max-width: 520px;
+    font-size: clamp(2.3rem,5vw,3.65rem);
+}
+
+.hero-copy {
+    max-width: 460px;
+    margin-bottom: 1.75rem;
+    color: #cfdae6;
+    font-size: 1.1rem;
+}
+
+.hero-actions {
+    display: flex;
+    gap: .75rem;
+}
+
+.court-mark {
+    align-self: center;
+    padding-right: 3%;
+    font-size: clamp(6rem,16vw,10rem);
+}
+
+.quick-grid, .tournament-grid {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 1rem;
+}
+
+.quick-card {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.25rem;
+    color: #1d3551;
+    text-decoration: none;
+    background: #fff;
+    border: 1px solid #e9edf3;
+    border-radius: .8rem;
+    box-shadow: 0 4px 14px #183b5610;
+}
+
+.quick-card:hover {
+    color: #1d3551;
+    border-color: #f5ae77;
+}
+
+.quick-card small {
+    display: block;
+    margin-top: .25rem;
+    color: #718198;
+}
+
+.quick-icon, .tournament-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    color: #df6514;
+    background: #fff1e6;
+    border-radius: .65rem;
+    font-size: 1.35rem;
+}
+
+.muted-card {
+    opacity: .72;
+}
+
+.page-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.page-heading p:not(.eyebrow) {
+    margin-bottom: 0;
+    color: #718198;
+}
+
+.back-link {
+    color: #536b85;
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.empty-state {
+    max-width: 660px;
+    margin: 5rem auto;
+    padding: 3rem;
+    text-align: center;
+    background: #fff;
+    border: 1px solid #e9edf3;
+    border-radius: 1rem;
+}
+
+.empty-state p {
+    max-width: 430px;
+    margin: .8rem auto 1.5rem;
+    color: #718198;
+}
+
+.empty-ball {
+    margin-bottom: .9rem;
+    font-size: 3.5rem;
+}
+
+.form-card {
+    max-width: 760px;
+    padding: 2rem;
+    background: #fff;
+    border: 1px solid #e9edf3;
+    border-radius: 1rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.full-width {
+    grid-column: 1/-1;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: .45rem;
+    color: #354b65;
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.form-control, .form-select {
+    min-height: 44px;
+    border-color: #d9e0e8;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .7rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eef1f5;
+}
+
+.validation-message, .validation-summary {
+    color: #bd2633;
+    font-size: .82rem;
+}
+
+.loading-state {
+    padding: 2rem;
+    color: #718198;
+}
+
+.tournament-card {
+    position: relative;
+    min-height: 205px;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #e7edf4;
+    border-radius: 1rem;
+    box-shadow: 0 5px 16px #183b560b;
+    transition: transform .18s ease,box-shadow .18s ease;
+}
+
+.tournament-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 11px 22px #183b5615;
+}
+
+.tournament-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.35rem;
+}
+
+.badge-soft {
+    padding: .3rem .6rem;
+    color: #37742a;
+    background: #eaf6e6;
+    border-radius: 99px;
+    font-size: .7rem;
+    font-weight: 800;
+}
+
+.tournament-card h2 {
+    margin-bottom: .45rem;
+    font-size: 1.1rem;
+}
+
+.tournament-dates {
+    color: #718198;
+    font-size: .86rem;
+}
+
+.tournament-link {
+    position: absolute;
+    inset: auto 1.25rem 1.15rem;
+    color: #dd6514;
+    font-size: .85rem;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.tournament-link span {
+    margin-left: .25rem;
+}
+
+@media(max-width:980px) {
+    .quick-grid, .tournament-grid {
+        grid-template-columns: repeat(2,minmax(0,1fr));
     }
-
-.darker-border-checkbox.form-check-input {
-    border-color: #929292;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
+@media(max-width:760px) {
+    .hero-panel {
+        min-height: 0;
+        padding: 2rem;
+    }
+    .court-mark {
+        display: none;
+    }
+    .quick-grid, .tournament-grid, .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .page-heading {
+        align-items: start;
+        flex-direction: column;
+    }
+    .form-card {
+        padding: 1.25rem;
+    }
+    .full-width {
+        grid-column: auto;
+    }
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-    text-align: start;
+@media(max-width:600px) {
+    .content {
+        padding-inline: 1rem;
+    }
+    .form-actions {
+        justify-content: stretch;
+    }
+    .form-actions .btn {
+        flex: 1;
+    }
+    .hero-actions {
+        flex-direction: column;
+    }
+    .hero-actions .btn {
+        width: 100%;
+    }
 }

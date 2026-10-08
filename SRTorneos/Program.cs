@@ -1,4 +1,6 @@
 using SRTorneos.Components;
+using SRTorneos.Data;
+using SRTorneos.Repositories;
 
 namespace SRTorneos
 {
@@ -11,6 +13,10 @@ namespace SRTorneos
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
+
+            builder.Services.AddScoped<ISqlConnectionFactory, SqlConnectionFactory>();
+            builder.Services.AddScoped<ITorneoRepository, TorneoRepository>();
+            builder.Services.AddScoped<ICatalogoRepository, CatalogoRepository>();
 
             var app = builder.Build();
 

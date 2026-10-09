@@ -26,6 +26,7 @@ public class TorneoPlantillaBase : TorneoPaginaBase
     protected EquipoInscrito? Equipo { get; private set; }
     protected List<JugadorPlantilla> Plantilla { get; private set; } = [];
     protected List<Jugador> Disponibles { get; private set; } = [];
+    private Dictionary<int, Jugador> _numerosOcupados = [];
 
     protected bool EnEdicion => FormJugador is { Id: > 0 };
     private string UrlPlantilla => $"torneos/{Id}/equipos/{IdEquipo}";
@@ -41,6 +42,7 @@ public class TorneoPlantillaBase : TorneoPaginaBase
 
         Plantilla = await JugadorRepository.ObtenerPlantillaAsync(Id, IdEquipo);
         Disponibles = await JugadorRepository.ObtenerDisponiblesAsync(Id);
+        _numerosOcupados = await JugadorRepository.ObtenerNumerosOcupadosAsync();
 
         if (FormJugador is null)
         {
@@ -62,9 +64,9 @@ public class TorneoPlantillaBase : TorneoPaginaBase
             return;
         }
 
-        if (Plantilla.Any(j => j.Numero == jugador.Numero && j.IdJugador != jugador.Id))
+        if (_numerosOcupados.TryGetValue(jugador.Numero, out var dueno) && dueno.Id != jugador.Id)
         {
-            Error = $"El número {jugador.Numero} ya lo usa otro jugador de {Equipo.Nombre}.";
+            Error = $"El número {jugador.Numero} ya lo tiene {dueno.Nombre}. En tu base de datos el número de jugador no se puede repetir en todo el sistema (índice UQ_Jugadores_Numero). Prueba con el {SiguienteNumero()}.";
             return;
         }
 
@@ -119,11 +121,11 @@ public class TorneoPlantillaBase : TorneoPaginaBase
         else Error = "No se puede quitar: el jugador ya tiene puntos o faltas registrados en este torneo.";
     }
 
+    /// <summary>Primer número libre en toda la base (el número de jugador es único globalmente).</summary>
     private int SiguienteNumero()
     {
-        var usados = Plantilla.Select(j => j.Numero).ToHashSet();
         int numero = 1;
-        while (usados.Contains(numero)) numero++;
+        while (_numerosOcupados.ContainsKey(numero)) numero++;
         return numero;
     }
 }

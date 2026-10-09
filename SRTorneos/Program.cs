@@ -1,6 +1,7 @@
 using SRTorneos.Components;
 using SRTorneos.Data;
 using SRTorneos.Repositories;
+using SRTorneos.Servicios;
 
 namespace SRTorneos
 {
@@ -20,6 +21,7 @@ namespace SRTorneos
             builder.Services.AddScoped<IJugadorRepository, JugadorRepository>();
             builder.Services.AddScoped<IPartidoRepository, PartidoRepository>();
             builder.Services.AddScoped<ILugarRepository, LugarRepository>();
+            builder.Services.AddSingleton<ReglasAnotacion>();
 
             var app = builder.Build();
 

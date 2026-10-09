@@ -42,25 +42,24 @@ public static class Presentacion
     public static string? Aviso(string? clave)
         => clave is not null && Avisos.TryGetValue(clave, out string? texto) ? texto : null;
 
-    public static string IconoDeporte(string? deporte)
+    public static string IconoDeporte(string? deporte) => ClasificadorDeporte.Clasificar(deporte) switch
     {
-        string nombre = (deporte ?? string.Empty).Trim().ToLowerInvariant();
-        if (nombre.Contains("americano")) return "🏈";
-        if (nombre.StartsWith("basq") || nombre.StartsWith("básq") || nombre.StartsWith("basket") || nombre.StartsWith("balonc")) return "🏀";
-        if (nombre.StartsWith("fut") || nombre.StartsWith("fút") || nombre.StartsWith("soccer")) return "⚽";
-        if (nombre.StartsWith("vol") || nombre.StartsWith("vól")) return "🏐";
-        if (nombre.StartsWith("béis") || nombre.StartsWith("beis") || nombre.StartsWith("base")) return "⚾";
-        if (nombre.StartsWith("ten")) return "🎾";
-        return "🏆";
-    }
+        DeporteBase.Basquetbol => "🏀",
+        DeporteBase.Futbol => "⚽",
+        DeporteBase.FutbolAmericano => "🏈",
+        DeporteBase.Voleibol => "🏐",
+        DeporteBase.Beisbol => "⚾",
+        DeporteBase.Tenis => "🎾",
+        _ => "🏆"
+    };
 
     /// <summary>Posiciones sugeridas según el deporte (solo sugerencias; el campo es libre).</summary>
-    public static IReadOnlyList<string> PosicionesSugeridas(string? deporte) => IconoDeporte(deporte) switch
+    public static IReadOnlyList<string> PosicionesSugeridas(string? deporte) => ClasificadorDeporte.Clasificar(deporte) switch
     {
-        "🏀" => ["Base", "Escolta", "Alero", "Ala-pívot", "Pívot"],
-        "⚽" => ["Portero", "Defensa", "Medio", "Delantero"],
-        "🏐" => ["Armador", "Opuesto", "Central", "Receptor", "Líbero"],
-        "⚾" => ["Pitcher", "Catcher", "Cuadro", "Jardinero"],
+        DeporteBase.Basquetbol => ["Base", "Escolta", "Alero", "Ala-pívot", "Pívot"],
+        DeporteBase.Futbol => ["Portero", "Defensa", "Medio", "Delantero"],
+        DeporteBase.Voleibol => ["Armador", "Opuesto", "Central", "Receptor", "Líbero"],
+        DeporteBase.Beisbol => ["Pitcher", "Catcher", "Cuadro", "Jardinero"],
         _ => []
     };
 
@@ -86,5 +85,12 @@ public static class Presentacion
         string texto = fecha.ToString("dddd dd 'de' MMMM, HH:mm", Cultura);
         return char.ToUpper(texto[0], Cultura) + texto[1..];
     }
+    /// <summary>"a", "a y b", "a, b y c".</summary>
+    public static string ListaNatural(IEnumerable<string> elementos, string conjuncion = "y")
+    {
+        var lista = elementos.ToList();
+        return lista.Count <= 1 ? string.Concat(lista) : $"{string.Join(", ", lista[..^1])} {conjuncion} {lista[^1]}";
+    }
+
     public static string Puesto(int puesto) => puesto <= 0 ? "Sin definir" : $"{puesto}°";
 }

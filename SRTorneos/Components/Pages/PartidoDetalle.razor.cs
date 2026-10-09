@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using SRTorneos.Models;
 using SRTorneos.Repositories;
+using SRTorneos.Servicios;
 
 namespace SRTorneos.Components.Pages;
 
@@ -9,6 +10,7 @@ public class PartidoDetalleBase : TorneoPaginaBase
     [Inject] protected IPartidoRepository PartidoRepository { get; set; } = default!;
     [Inject] protected IJugadorRepository JugadorRepository { get; set; } = default!;
     [Inject] protected ICatalogoRepository CatalogoRepository { get; set; } = default!;
+    [Inject] protected ReglasAnotacion ReglasAnotacion { get; set; } = default!;
 
     [Parameter] public int IdPartido { get; set; }
 
@@ -25,6 +27,12 @@ public class PartidoDetalleBase : TorneoPaginaBase
     protected Dictionary<int, JugadorPlantilla> JugadoresPorId { get; private set; } = [];
     protected List<FaltaRegistrada> Faltas { get; private set; } = [];
     protected List<ElementoCatalogo> TiposFalta { get; private set; } = [];
+
+    /// <summary>Tipos de anotación que se capturan por jugador (columnas de la tabla).</summary>
+    protected IReadOnlyList<TipoAnotacion> TiposAnotacion { get; private set; } = [];
+
+    /// <summary>Tipos del deporte que la base no acepta; solo cuentan en el marcador.</summary>
+    protected IReadOnlyList<TipoAnotacion> TiposSinRegistro { get; private set; } = [];
 
     /// <summary>Equipo local y visitante, en ese orden.</summary>
     protected (int IdEquipo, string Nombre, bool EsLocal)[] Lados =>
@@ -48,6 +56,9 @@ public class PartidoDetalleBase : TorneoPaginaBase
             .Concat(await JugadorRepository.ObtenerPlantillaAsync(Id, Partido.IdEquipo2));
         JugadoresPorId = plantilla.ToDictionary(j => j.IdJugador);
 
+        TiposAnotacion = ReglasAnotacion.Permitidos(Torneo!.Deporte);
+        TiposSinRegistro = ReglasAnotacion.NoPermitidos(Torneo.Deporte);
+
         Faltas = await PartidoRepository.ObtenerFaltasAsync(IdPartido);
         TiposFalta = await CatalogoRepository.ObtenerTiposFaltaAsync();
         FormFalta ??= new FaltaFormulario();
@@ -63,7 +74,9 @@ public class PartidoDetalleBase : TorneoPaginaBase
                     .Select(j => new AnotacionFila
                     {
                         IdJugador = j.IdJugador,
-                        Puntos = anotaciones.TryGetValue(j.IdJugador, out int puntos) ? puntos : null
+                        Cantidades = TiposAnotacion
+                            .Select(t => anotaciones.FirstOrDefault(a => a.IdJugador == j.IdJugador && a.Valor == t.Valor)?.Cantidad)
+                            .ToList()
                     })
                     .ToList()
             };
@@ -74,14 +87,15 @@ public class PartidoDetalleBase : TorneoPaginaBase
     {
         if (Partido is null || FormResultado is null) return;
 
-        if (FormResultado.Anotaciones.Any(a => a.Puntos is < 0 or > 999))
+        var filas = FormResultado.Anotaciones;
+        if (filas.Any(f => f.Cantidades.Count > TiposAnotacion.Count || f.Cantidades.Any(c => c is < 0 or > 99)))
         {
-            Error = "Los puntos por jugador deben estar entre 0 y 999.";
+            Error = "Las anotaciones por jugador deben estar entre 0 y 99.";
             return;
         }
 
-        var capturadas = FormResultado.Anotaciones.Where(a => a.Puntos is > 0).ToList();
-        if (capturadas.Any(a => !JugadoresPorId.ContainsKey(a.IdJugador)))
+        var capturadas = filas.Where(f => f.Puntos(TiposAnotacion) > 0).ToList();
+        if (capturadas.Any(f => !JugadoresPorId.ContainsKey(f.IdJugador)) || capturadas.GroupBy(f => f.IdJugador).Any(g => g.Count() > 1))
         {
             Error = "Hay jugadores que no pertenecen a los equipos de este partido.";
             return;
@@ -89,24 +103,23 @@ public class PartidoDetalleBase : TorneoPaginaBase
 
         foreach (var (idEquipo, nombre, esLocal) in Lados)
         {
-            var delEquipo = capturadas.Where(a => JugadoresPorId[a.IdJugador].IdEquipo == idEquipo).ToList();
             int marcador = (esLocal ? FormResultado.Puntos1 : FormResultado.Puntos2) ?? 0;
-            int suma = delEquipo.Sum(a => a.Puntos ?? 0);
+            int suma = capturadas.Where(f => JugadoresPorId[f.IdJugador].IdEquipo == idEquipo).Sum(f => f.Puntos(TiposAnotacion));
 
-            if (delEquipo.Count > 0 && suma != marcador)
+            if (suma > marcador)
             {
-                Error = $"La suma de puntos de los jugadores de {nombre} ({suma}) no coincide con su marcador ({marcador}).";
+                Error = $"Los jugadores de {nombre} suman {suma} puntos, más que su marcador ({marcador}). Revisa las anotaciones por jugador.";
                 return;
             }
         }
 
-        var puntosPorJugador = capturadas
-            .GroupBy(a => a.IdJugador)
-            .Select(g => KeyValuePair.Create(g.Key, g.Sum(a => a.Puntos ?? 0)))
+        var anotaciones = capturadas
+            .SelectMany(f => TiposAnotacion.Select((t, i) => new CanastasJugador(f.IdJugador, t.Valor, i < f.Cantidades.Count ? f.Cantidades[i] ?? 0 : 0)))
+            .Where(c => c.Cantidad > 0)
             .ToList();
 
         if (await IntentarAsync(() => PartidoRepository.GuardarResultadoAsync(
-                Partido, FormResultado.Puntos1!.Value, FormResultado.Puntos2!.Value, puntosPorJugador),
+                Partido, FormResultado.Puntos1!.Value, FormResultado.Puntos2!.Value, anotaciones),
             "No se pudo guardar el resultado."))
         {
             IrA(UrlPartido, "resultado-guardado");

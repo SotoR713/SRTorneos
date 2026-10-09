@@ -7,6 +7,12 @@ public interface IJugadorRepository
     // Catálogo general de jugadores
     Task<List<JugadorResumen>> ObtenerTodosAsync(string? busqueda, CancellationToken cancellationToken = default);
     Task<int> CrearAsync(Jugador jugador, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Números ya usados y el jugador que los tiene. En SRTorneosBD el número es único en todo
+    /// el sistema (índice UQ_Jugadores_Numero), no solo dentro del equipo.
+    /// </summary>
+    Task<Dictionary<int, Jugador>> ObtenerNumerosOcupadosAsync(CancellationToken cancellationToken = default);
     Task<bool> EliminarAsync(int id, CancellationToken cancellationToken = default);
 
     // Plantillas por torneo

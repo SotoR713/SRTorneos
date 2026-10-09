@@ -75,7 +75,7 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
             cancellationToken);
 
     public Task GuardarResultadoAsync(PartidoResumen partido, int puntos1, int puntos2,
-        IReadOnlyCollection<KeyValuePair<int, int>> puntosPorJugador, CancellationToken cancellationToken = default)
+        IReadOnlyCollection<CanastasJugador> anotaciones, CancellationToken cancellationToken = default)
         => EnTransaccionAsync(async (conexion, transaccion) =>
         {
             await EjecutarAsync(conexion, transaccion, """
@@ -92,15 +92,20 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
                 p.Entero("@puntos2", puntos2);
             }, cancellationToken);
 
-            foreach (var (idJugador, puntos) in puntosPorJugador)
+            // Una fila por anotación: TOP (@cantidad) sobre una vista del sistema genera las filas necesarias.
+            foreach (var anotacion in anotaciones.Where(a => a.Cantidad > 0))
             {
-                await EjecutarAsync(conexion, transaccion,
-                    "INSERT INTO Anotacion (IdJugador, IdPartido, Puntos) VALUES (@idJugador, @idPartido, @puntos);", p =>
-                    {
-                        p.Entero("@idJugador", idJugador);
-                        p.Entero("@idPartido", partido.Id);
-                        p.Entero("@puntos", puntos);
-                    }, cancellationToken);
+                await EjecutarAsync(conexion, transaccion, """
+                    INSERT INTO Anotacion (IdJugador, IdPartido, Puntos)
+                    SELECT TOP (@cantidad) @idJugador, @idPartido, @puntos
+                    FROM sys.all_objects;
+                    """, p =>
+                {
+                    p.Entero("@cantidad", anotacion.Cantidad);
+                    p.Entero("@idJugador", anotacion.IdJugador);
+                    p.Entero("@idPartido", partido.Id);
+                    p.Entero("@puntos", anotacion.Valor);
+                }, cancellationToken);
             }
 
             return true;
@@ -114,17 +119,15 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
                 """, p => p.Entero("@idPartido", idPartido), cancellationToken),
             cancellationToken);
 
-    public async Task<Dictionary<int, int>> ObtenerAnotacionesAsync(int idPartido, CancellationToken cancellationToken = default)
-    {
-        var filas = await ConsultarAsync("""
-            SELECT IdJugador, SUM(Puntos) AS Puntos FROM Anotacion
-            WHERE IdPartido = @idPartido GROUP BY IdJugador;
+    public Task<List<CanastasJugador>> ObtenerAnotacionesAsync(int idPartido, CancellationToken cancellationToken = default)
+        => ConsultarAsync("""
+            SELECT IdJugador, Puntos, COUNT(*) AS Cantidad
+            FROM Anotacion
+            WHERE IdPartido = @idPartido
+            GROUP BY IdJugador, Puntos;
             """,
-            l => KeyValuePair.Create(l.Entero("IdJugador"), l.Entero("Puntos")),
+            l => new CanastasJugador(l.Entero("IdJugador"), l.Entero("Puntos"), l.Entero("Cantidad")),
             p => p.Entero("@idPartido", idPartido), cancellationToken);
-
-        return filas.ToDictionary();
-    }
 
     public Task<List<FaltaRegistrada>> ObtenerFaltasAsync(int idPartido, CancellationToken cancellationToken = default)
         => ConsultarAsync("""

@@ -933,3 +933,9 @@ a.row-title:hover { color: #df6514; }
     .panel__header:has(.search-form) { flex-direction: column; align-items: stretch; }
     .search-form { flex-basis: auto; }
 }
+
+.count-input {
+    width: 64px;
+    margin-left: auto;
+    text-align: right;
+}

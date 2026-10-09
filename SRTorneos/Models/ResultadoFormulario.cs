@@ -15,10 +15,16 @@ public class ResultadoFormulario
     public List<AnotacionFila> Anotaciones { get; set; } = [];
 }
 
+/// <summary>
+/// Anotaciones de un jugador en el partido. Cantidades va en el mismo orden que los
+/// tipos de anotación permitidos del deporte (p. ej. [triples, dobles]).
+/// </summary>
 public class AnotacionFila
 {
     public int IdJugador { get; set; }
 
-    [Range(0, 999, ErrorMessage = "Puntos inválidos.")]
-    public int? Puntos { get; set; }
+    public List<int?> Cantidades { get; set; } = [];
+
+    public int Puntos(IReadOnlyList<TipoAnotacion> tipos)
+        => tipos.Select((t, i) => t.Valor * (i < Cantidades.Count ? Cantidades[i] ?? 0 : 0)).Sum();
 }

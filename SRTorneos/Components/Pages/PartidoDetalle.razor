@@ -75,20 +75,32 @@ else
                                 {
                                     <p class="panel__empty">Sin jugadores en la plantilla. <a href="torneos/@Id/equipos/@idEquipo">Agregar jugadores</a></p>
                                 }
-                                else
+                                else if (TiposAnotacion.Count > 0)
                                 {
                                     <table class="data-table data-table--compact">
-                                        <thead><tr><th class="num">#</th><th>Jugador</th><th class="num">Puntos</th></tr></thead>
+                                        <thead>
+                                            <tr>
+                                                <th class="num">#</th><th>Jugador</th>
+                                                @foreach (var tipo in TiposAnotacion) { <th class="num" title="@tipo.Nombre (@tipo.Valor pts)">@tipo.Abreviatura</th> }
+                                                <th class="num">Pts</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             @for (int i = 0; i < FormResultado.Anotaciones.Count; i++)
                                             {
                                                 var indice = i;
                                                 var fila = FormResultado.Anotaciones[indice];
                                                 if (!JugadoresPorId.TryGetValue(fila.IdJugador, out var jugador) || jugador.IdEquipo != idEquipo) continue;
+                                                while (fila.Cantidades.Count < TiposAnotacion.Count) { fila.Cantidades.Add(null); }
                                                 <tr>
                                                     <td class="num"><span class="jersey">@jugador.Numero</span></td>
                                                     <td>@jugador.Nombre<input type="hidden" name="FormResultado.Anotaciones[@indice].IdJugador" value="@fila.IdJugador" /></td>
-                                                    <td class="num"><InputNumber class="form-control form-control-sm points-input" @bind-Value="FormResultado.Anotaciones[indice].Puntos" min="0" max="999" aria-label="@($"Puntos de {jugador.Nombre}")" /></td>
+                                                    @for (int k = 0; k < TiposAnotacion.Count; k++)
+                                                    {
+                                                        var columna = k;
+                                                        <td class="num"><input type="number" class="form-control form-control-sm count-input" name="@($"FormResultado.Anotaciones[{indice}].Cantidades[{columna}]")" value="@fila.Cantidades[columna]" min="0" max="99" aria-label="@($"{TiposAnotacion[columna].Nombre} de {jugador.Nombre}")" /></td>
+                                                    }
+                                                    <td class="num"><strong>@fila.Puntos(TiposAnotacion)</strong></td>
                                                 </tr>
                                             }
                                         </tbody>
@@ -98,7 +110,20 @@ else
                         }
                     </div>
 
-                    <p class="field-hint">Los puntos por jugador son opcionales. Si los capturas, su suma debe coincidir con el marcador del equipo.</p>
+                    @if (TiposAnotacion.Count > 0)
+                    {
+                        <p class="field-hint">
+                            Por jugador captura cuántos @(Presentacion.ListaNatural(TiposAnotacion.Select(t => $"{t.Nombre.ToLowerInvariant()} ({t.Valor} pts)"))) hizo. Es opcional y su suma no puede superar el marcador del equipo.
+                            @if (TiposSinRegistro.Count > 0)
+                            {
+                                <span>Los @(Presentacion.ListaNatural(TiposSinRegistro.Select(t => t.Nombre.ToLowerInvariant()))) no se registran por jugador (tu base solo acepta anotaciones de @(Presentacion.ListaNatural(ReglasAnotacion.ValoresPermitidos.OrderByDescending(v => v).Select(v => v.ToString()), "o")) puntos); inclúyelos solo en el marcador.</span>
+                            }
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="field-hint">Tu base de datos no acepta anotaciones por jugador para @Torneo.Deporte (CK_Anotacion_Puntos). Solo se guarda el marcador de cada equipo.</p>
+                    }
 
                     <div class="form-actions">
                         <button class="btn btn-accent" type="submit">Guardar resultado</button>

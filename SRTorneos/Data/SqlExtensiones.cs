@@ -44,6 +44,13 @@ public static class SqlExtensiones
         return lector.IsDBNull(indice) ? null : lector.GetDateTime(indice);
     }
 
-    /// <summary>Error 547: la operación choca con una llave foránea (hay datos relacionados).</summary>
-    public static bool EsLlaveForanea(this SqlException ex) => ex.Number == 547;
+    /// <summary>Error 547 por llave foránea: la operación choca con datos relacionados.</summary>
+    public static bool EsLlaveForanea(this SqlException ex) => ex.Number == 547 && !EsRestriccionCheck(ex);
+
+    /// <summary>Error 547 por una restricción CHECK de la base (un valor que la regla no permite).</summary>
+    public static bool EsRestriccionCheck(this SqlException ex)
+        => ex.Number == 547 && ex.Message.Contains("CHECK", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Errores 2627/2601: se viola un índice o restricción UNIQUE (valor repetido).</summary>
+    public static bool EsDuplicado(this SqlException ex) => ex.Number is 2627 or 2601;
 }

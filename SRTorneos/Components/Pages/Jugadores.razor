@@ -72,6 +72,7 @@
                     <div class="form-field"><label for="numero">Número</label><InputNumber id="numero" class="form-control" @bind-Value="FormJugador.Numero" min="0" max="999" /><ValidationMessage For="@(() => FormJugador.Numero)" /></div>
                     <div class="form-field"><label for="nombre">Nombre</label><InputText id="nombre" class="form-control" @bind-Value="FormJugador.Nombre" maxlength="50" /><ValidationMessage For="@(() => FormJugador.Nombre)" /></div>
                 </div>
+                <small class="field-hint mb-3">El número de jugador no se puede repetir en todo el sistema.</small>
                 <div class="form-field"><label for="posicion">Posición</label><InputText id="posicion" class="form-control" @bind-Value="FormJugador.Posicion" maxlength="20" /><ValidationMessage For="@(() => FormJugador.Posicion)" /></div>
                 <div class="form-actions">
                     @if (EnEdicion) { <a class="btn btn-light" href="jugadores">Cancelar</a> }

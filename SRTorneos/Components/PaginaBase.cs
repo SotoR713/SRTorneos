@@ -15,6 +15,7 @@ public abstract class PaginaBase : ComponentBase
 
     [Inject] protected NavigationManager Navegacion { get; set; } = default!;
     [Inject] protected ILogger<PaginaBase> Logger { get; set; } = default!;
+    [Inject] protected IWebHostEnvironment Entorno { get; set; } = default!;
 
     [CascadingParameter] public HttpContext? HttpContext { get; set; }
 
@@ -41,11 +42,31 @@ public abstract class PaginaBase : ComponentBase
         }
         catch (SqlException ex)
         {
-            Logger.LogError(ex, "Error de SQL: {Mensaje}", mensajeError);
-            Error = ex.EsLlaveForanea() && mensajeRelacionados is not null ? mensajeRelacionados : mensajeError;
+            Logger.LogError(ex, "Error de SQL {Numero}: {Mensaje}", ex.Number, mensajeError);
+            string mensaje = ex switch
+            {
+                _ when ex.EsLlaveForanea() && mensajeRelacionados is not null => mensajeRelacionados,
+                _ when ex.EsDuplicado() => $"{mensajeError} Ya existe un registro con ese valor y la base no permite repetirlo.",
+                _ when ex.EsRestriccionCheck() => $"{mensajeError} La base de datos rechazó un valor por una de sus reglas (restricción CHECK).",
+                _ => mensajeError
+            };
+            Error = mensaje + Detalle(ex);
+            return false;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or InvalidCastException or FormatException or IndexOutOfRangeException)
+        {
+            // Errores típicos de ADO.NET (conexión, columnas o tipos que no coinciden con la base).
+            Logger.LogError(ex, "Error al acceder a datos: {Mensaje}", mensajeError);
+            Error = mensajeError + Detalle(ex);
             return false;
         }
     }
+
+    /// <summary>En desarrollo agrega el mensaje técnico para diagnosticar; en producción no se muestra.</summary>
+    private string Detalle(Exception ex)
+        => Entorno.IsDevelopment()
+            ? $" Detalle técnico: {(ex is SqlException sql ? $"[SQL {sql.Number}] " : $"[{ex.GetType().Name}] ")}{ex.Message}"
+            : string.Empty;
 
     /// <summary>Patrón POST-Redirect-GET con aviso opcional.</summary>
     protected void IrA(string url, string? aviso = null)

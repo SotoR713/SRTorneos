@@ -22,10 +22,15 @@ public class JugadoresBase : PaginaBase
 
     protected List<JugadorResumen> Lista { get; private set; } = [];
     protected bool EnEdicion => FormJugador is { Id: > 0 };
+    private Dictionary<int, Jugador> _numerosOcupados = [];
 
     protected override async Task OnInitializedAsync()
     {
-        if (!await IntentarAsync(async () => Lista = await JugadorRepository.ObtenerTodosAsync(Busqueda), ErrorConexion)) return;
+        if (!await IntentarAsync(async () =>
+            {
+                Lista = await JugadorRepository.ObtenerTodosAsync(Busqueda);
+                _numerosOcupados = await JugadorRepository.ObtenerNumerosOcupadosAsync();
+            }, ErrorConexion)) return;
 
         if (FormJugador is null)
         {
@@ -35,7 +40,7 @@ public class JugadoresBase : PaginaBase
                 await IntentarAsync(async () => editar = await JugadorRepository.ObtenerPorIdAsync(id), ErrorConexion);
             }
 
-            FormJugador = editar ?? new Jugador();
+            FormJugador = editar ?? new Jugador { Numero = SiguienteNumero() };
         }
     }
 
@@ -43,6 +48,12 @@ public class JugadoresBase : PaginaBase
     {
         if (FormJugador is null) return;
         var jugador = FormJugador;
+
+        if (_numerosOcupados.TryGetValue(jugador.Numero, out var dueno) && dueno.Id != jugador.Id)
+        {
+            Error = $"El número {jugador.Numero} ya lo tiene {dueno.Nombre}. En tu base de datos el número de jugador no se puede repetir (índice UQ_Jugadores_Numero). Prueba con el {SiguienteNumero()}.";
+            return;
+        }
 
         if (jugador.Id > 0)
         {
@@ -71,5 +82,12 @@ public class JugadoresBase : PaginaBase
         {
             IrA("jugadores", "jugador-eliminado");
         }
+    }
+
+    private int SiguienteNumero()
+    {
+        int numero = 1;
+        while (_numerosOcupados.ContainsKey(numero)) numero++;
+        return numero;
     }
 }

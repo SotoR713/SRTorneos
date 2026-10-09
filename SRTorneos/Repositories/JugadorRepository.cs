@@ -41,6 +41,15 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
             VALUES (@numero, @nombre, @posicion);
             """, p => ParametrosJugador(p, jugador), cancellationToken);
 
+    public async Task<Dictionary<int, Jugador>> ObtenerNumerosOcupadosAsync(CancellationToken cancellationToken = default)
+    {
+        var jugadores = await ConsultarAsync("SELECT Id, Numero, Nombre, Posicion FROM Jugadores;",
+            MapearJugador, cancellationToken: cancellationToken);
+
+        // Si en algún momento se quita el índice único, se conserva el primero que aparezca.
+        return jugadores.GroupBy(j => j.Numero).ToDictionary(g => g.Key, g => g.First());
+    }
+
     public async Task<bool> EliminarAsync(int id, CancellationToken cancellationToken = default)
         => await EjecutarAsync("DELETE FROM Jugadores WHERE Id = @id;", p => p.Entero("@id", id), cancellationToken) == 1;
 

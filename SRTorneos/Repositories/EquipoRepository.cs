@@ -109,6 +109,7 @@ public class EquipoRepository(ISqlConnectionFactory connectionFactory)
     public Task<bool> QuitarDelTorneoAsync(int idTorneo, int idEquipo, CancellationToken cancellationToken = default)
         => EnTransaccionAsync(async (conexion, transaccion) =>
         {
+            // No se quita si ya tiene partidos programados en el torneo.
             int partidos = await EscalarEnteroAsync(conexion, transaccion, """
                 SELECT COUNT(*) FROM Partidos
                 WHERE IdTorneo = @idTorneo AND (IdEquipo1 = @idEquipo OR IdEquipo2 = @idEquipo);

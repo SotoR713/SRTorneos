@@ -1,0 +1,12 @@
+@* Seguir un torneo: se guarda en una cookie del navegador del visitante (sin cuenta y sin tocar la base). *@
+<button type="button" class="btn-pill btn-follow @(Sigo ? "is-on" : null)" data-seguir="@IdTorneo" aria-pressed="@(Sigo ? "true" : "false")">
+    <span class="btn-follow__off">☆ Seguir</span>
+    <span class="btn-follow__on">★ Siguiendo</span>
+</button>
+
+@code {
+    [Parameter, EditorRequired] public int IdTorneo { get; set; }
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    private bool Sigo => Seguimiento.Leer(HttpContext).Contains(IdTorneo);
+}

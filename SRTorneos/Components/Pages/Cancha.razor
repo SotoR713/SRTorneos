@@ -1,0 +1,71 @@
+@page "/canchas/{IdLugar:int}"
+@inherits PaginaBase
+@inject SRTorneos.Repositories.ILugarRepository LugarRepository
+@inject SRTorneos.Repositories.IPartidoRepository PartidoRepository
+
+<PageTitle>SRTorneos | @(Lugar?.Nombre ?? "Cancha")</PageTitle>
+
+<a class="back-link" href="canchas">← Canchas</a>
+<Avisos Error="@Error" />
+
+@if (Lugar is not null)
+{
+    <section class="profile-hero">
+        <span class="profile-hero__badge" aria-hidden="true">📍</span>
+        <div class="profile-hero__info">
+            <p class="eyebrow">CANCHA</p>
+            <h1>@Lugar.Nombre</h1>
+            <p>@Lugar.Direccion</p>
+        </div>
+        <div class="profile-hero__actions">
+            <a class="btn-pill" href="@Presentacion.UrlMapa(Lugar.Nombre, Lugar.Direccion)" target="_blank" rel="noopener">Cómo llegar</a>
+            <BotonCompartir Texto="@($"{Lugar.Nombre} · {Lugar.Direccion}")" Ruta="@($"canchas/{IdLugar}")" />
+        </div>
+    </section>
+
+    <section class="feed-section">
+        <header class="feed-section__head"><h2>Próximos partidos aquí</h2></header>
+        @if (Proximos.Count == 0)
+        {
+            <p class="panel__empty">No hay partidos programados en esta cancha.</p>
+        }
+        else
+        {
+            @foreach (var dia in Proximos.GroupBy(p => DateOnly.FromDateTime(p.Fecha)))
+            {
+                <h3 class="day-group__title">@Presentacion.EncabezadoDia(dia.Key)</h3>
+                <div class="match-grid">@foreach (var partido in dia) { <TarjetaPartido Partido="partido" MostrarTorneo="true" /> }</div>
+            }
+        }
+    </section>
+
+    @if (Resultados.Count > 0)
+    {
+        <section class="feed-section">
+            <header class="feed-section__head"><h2>Últimos resultados</h2></header>
+            <div class="match-grid">@foreach (var partido in Resultados) { <TarjetaPartido Partido="partido" MostrarTorneo="true" /> }</div>
+        </section>
+    }
+}
+
+@code {
+    [Parameter] public int IdLugar { get; set; }
+
+    private Lugar? Lugar;
+    private List<PartidoResumen> Proximos = [];
+    private List<PartidoResumen> Resultados = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hoy = DateTime.Today;
+        await IntentarAsync(async () =>
+        {
+            Lugar = await LugarRepository.ObtenerPorIdAsync(IdLugar);
+            if (Lugar is null) return;
+            Proximos = await PartidoRepository.ObtenerAgendaAsync(new SRTorneos.Repositories.FiltroAgenda(hoy, hoy.AddDays(120), Jugados: false, Maximo: 60, IdLugar: IdLugar));
+            Resultados = await PartidoRepository.ObtenerAgendaAsync(new SRTorneos.Repositories.FiltroAgenda(hoy.AddDays(-365), hoy.AddYears(1), Jugados: true, Maximo: 8, Descendente: true, IdLugar: IdLugar));
+        }, ErrorConexion);
+
+        if (Lugar is null && Error is null) Navegacion.NotFound();
+    }
+}

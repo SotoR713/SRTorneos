@@ -1,5 +1,6 @@
 @page "/torneos/nuevo"
 @page "/torneos/{Id:int}/editar"
+@attribute [Authorize]
 @inherits TorneoEditorBase
 
 <PageTitle>SRTorneos | @Titulo</PageTitle>
@@ -26,7 +27,6 @@
                 Faltan datos para crear torneos:
                 @if (Deportes.Count == 0) { <a href="catalogos/deportes">agrega un deporte</a><span>. </span> }
                 @if (TiposTorneo.Count == 0) { <a href="catalogos/tipos-torneo">agrega un tipo de torneo</a><span>. </span> }
-                @if (Usuarios.Count == 0) { <span>No hay usuarios: ejecuta <code>BaseDatos\01-datos-iniciales.sql</code> para crear el usuario <strong>admin</strong>.</span> }
             </div>
         }
 
@@ -39,8 +39,7 @@
                 <div class="form-field"><label for="inicio">Fecha de inicio</label><InputDate id="inicio" class="form-control" @bind-Value="Formulario.FechaInicio" /><ValidationMessage For="@(() => Formulario.FechaInicio)" /></div>
                 <div class="form-field"><label for="fin">Fecha de fin</label><InputDate id="fin" class="form-control" @bind-Value="Formulario.FechaFin" /><ValidationMessage For="@(() => Formulario.FechaFin)" /></div>
                 <div class="form-field"><label for="deporte">Deporte</label><InputSelect id="deporte" class="form-select" @bind-Value="Formulario.IdDeporte"><option value="0">Selecciona un deporte</option>@foreach (var deporte in Deportes) { <option value="@deporte.Id">@deporte.Nombre</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdDeporte)" /></div>
-                <div class="form-field"><label for="tipoTorneo">Tipo de torneo</label><InputSelect id="tipoTorneo" class="form-select" @bind-Value="Formulario.IdTipoTorneo"><option value="0">Selecciona un tipo</option>@foreach (var tipo in TiposTorneo) { <option value="@tipo.Id">@tipo.Nombre</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdTipoTorneo)" /></div>
-                <div class="form-field full-width"><label for="usuario">Creador</label><InputSelect id="usuario" class="form-select" @bind-Value="Formulario.IdUsuario"><option value="0">Selecciona un usuario</option>@foreach (var usuario in Usuarios) { <option value="@usuario.Id">@usuario.UserName</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdUsuario)" /></div>
+                <div class="form-field full-width"><label for="tipoTorneo">Tipo de torneo</label><InputSelect id="tipoTorneo" class="form-select" @bind-Value="Formulario.IdTipoTorneo"><option value="0">Selecciona un tipo</option>@foreach (var tipo in TiposTorneo) { <option value="@tipo.Id">@tipo.Nombre</option> }</InputSelect><ValidationMessage For="@(() => Formulario.IdTipoTorneo)" /></div>
             </div>
 
             <h2 class="form-section">Reglas</h2>

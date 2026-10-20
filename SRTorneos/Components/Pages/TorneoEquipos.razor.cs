@@ -9,8 +9,6 @@ public class TorneoEquiposBase : TorneoPaginaBase
     [Inject] protected IEquipoRepository EquipoRepository { get; set; } = default!;
     [Inject] protected ICatalogoRepository CatalogoRepository { get; set; } = default!;
 
-    [SupplyParameterFromQuery(Name = "editar")]
-    public int? Editar { get; set; }
 
     [SupplyParameterFromForm(FormName = "inscripcion")]
     protected InscripcionFormulario? FormInscripcion { get; set; }
@@ -124,7 +122,11 @@ public class TorneoEquiposBase : TorneoPaginaBase
 
     protected async Task QuitarAsync()
     {
-        if (Inscritos.All(e => e.IdEquipo != QuitarIdEquipo)) return;
+        if (Inscritos.All(e => e.IdEquipo != QuitarIdEquipo))
+        {
+            Error = "El registro ya no existe o ya fue eliminado. Recarga la página.";
+            return;
+        }
 
         bool quitado = false;
         if (!await IntentarAsync(async () => quitado = await EquipoRepository.QuitarDelTorneoAsync(Id, QuitarIdEquipo),

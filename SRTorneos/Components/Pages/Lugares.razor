@@ -1,4 +1,5 @@
 @page "/lugares"
+@attribute [Authorize]
 @inherits LugaresBase
 
 <PageTitle>SRTorneos | Lugares</PageTitle>
@@ -12,14 +13,14 @@
 <div class="split-layout">
     <section class="panel">
         <header class="panel__header"><h2>Lugares <span class="count-pill">@Lista.Count</span></h2></header>
+        <form method="post" @formname="eliminar-lugar" @onsubmit="EliminarAsync">
+        <AntiforgeryToken />
         @if (Lista.Count == 0)
         {
             <p class="panel__empty">Aún no hay lugares registrados. Necesitas al menos uno para programar partidos.</p>
         }
         else
         {
-            <form method="post" @formname="eliminar-lugar" @onsubmit="EliminarAsync">
-                <AntiforgeryToken />
                 <table class="data-table">
                     <thead><tr><th>Lugar</th><th>Dirección</th><th class="num">Partidos</th><th class="actions"></th></tr></thead>
                     <tbody>
@@ -41,8 +42,8 @@
                         }
                     </tbody>
                 </table>
-            </form>
         }
+        </form>
     </section>
 
     <section class="panel panel--form">

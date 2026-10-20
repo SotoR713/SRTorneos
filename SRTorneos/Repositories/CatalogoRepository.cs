@@ -11,11 +11,6 @@ public class CatalogoRepository(ISqlConnectionFactory connectionFactory)
             l => new Deporte { Id = l.Entero("Id"), Nombre = l.Texto("Nombre") },
             cancellationToken: cancellationToken);
 
-    public Task<List<UsuarioResumen>> ObtenerUsuariosAsync(CancellationToken cancellationToken = default)
-        => ConsultarAsync("SELECT Id, UserName FROM Usuarios ORDER BY UserName;",
-            l => new UsuarioResumen { Id = l.Entero("Id"), UserName = l.Texto("UserName") },
-            cancellationToken: cancellationToken);
-
     public Task<List<TipoTorneo>> ObtenerTiposTorneoAsync(CancellationToken cancellationToken = default)
         => ConsultarAsync("SELECT Id, Nombre FROM TiposTorneos ORDER BY Nombre;",
             l => new TipoTorneo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre") },

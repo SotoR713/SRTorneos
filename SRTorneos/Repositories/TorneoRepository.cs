@@ -10,7 +10,7 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
     private const string ConsultaResumen = """
         SELECT t.Id, t.Nombre, t.FechaInicio, t.FechaFin,
                t.IdDeporte, d.Nombre AS Deporte,
-               t.IdTipoTorneo, tt.Nombre AS TipoTorneo,
+               cfg.IdTipoTorneo, ISNULL(tt.Nombre, '') AS TipoTorneo,
                t.IdUsuario, u.UserName AS Creador,
                cfg.PuntosVict, cfg.EquiposMax,
                (SELECT COUNT(*) FROM Inscripciones i WHERE i.IdTorneo = t.Id) AS Equipos,
@@ -23,11 +23,12 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
                (SELECT MAX(p.Fecha) FROM Partidos p WHERE p.IdTorneo = t.Id) AS UltimoPartido
         FROM Torneos t
         INNER JOIN Deportes d ON d.Id = t.IdDeporte
-        INNER JOIN TiposTorneos tt ON tt.Id = t.IdTipoTorneo
         INNER JOIN Usuarios u ON u.Id = t.IdUsuario
-        OUTER APPLY (SELECT TOP (1) c.PuntosVict, c.EquiposMax
+        OUTER APPLY (SELECT TOP (1) c.PuntosVict, c.EquiposMax, c.IdTipoTorneo
                      FROM ConfigTorn c WHERE c.IdTorneo = t.Id ORDER BY c.Id) cfg
+        LEFT JOIN TiposTorneos tt ON tt.Id = cfg.IdTipoTorneo
         """;
+    // En SRTorneosBD el tipo de torneo vive en ConfigTorn (la tabla Torneos no tiene IdTipoTorneo).
 
     public Task<List<TorneoResumen>> ObtenerResumenesAsync(CancellationToken cancellationToken = default)
         => ConsultarAsync($"{ConsultaResumen} ORDER BY t.FechaInicio DESC, t.Nombre;",
@@ -40,9 +41,9 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
     public Task<int> CrearAsync(Torneo torneo, int puntosVictoria, int equiposMax, CancellationToken cancellationToken = default)
     {
         const string sqlTorneo = """
-            INSERT INTO Torneos (Nombre, FechaInicio, FechaFin, IdDeporte, IdUsuario, IdTipoTorneo)
+            INSERT INTO Torneos (Nombre, FechaInicio, FechaFin, IdDeporte, IdUsuario)
             OUTPUT INSERTED.Id
-            VALUES (@nombre, @fechaInicio, @fechaFin, @idDeporte, @idUsuario, @idTipoTorneo);
+            VALUES (@nombre, @fechaInicio, @fechaFin, @idDeporte, @idUsuario);
             """;
 
         return EnTransaccionAsync(async (conexion, transaccion) =>
@@ -59,7 +60,7 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
         const string sql = """
             UPDATE Torneos
             SET Nombre = @nombre, FechaInicio = @fechaInicio, FechaFin = @fechaFin,
-                IdDeporte = @idDeporte, IdUsuario = @idUsuario, IdTipoTorneo = @idTipoTorneo
+                IdDeporte = @idDeporte, IdUsuario = @idUsuario
             WHERE Id = @id;
             """;
 
@@ -128,7 +129,6 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
         p.Fecha("@fechaFin", torneo.FechaFin);
         p.Entero("@idDeporte", torneo.IdDeporte);
         p.Entero("@idUsuario", torneo.IdUsuario);
-        p.Entero("@idTipoTorneo", torneo.IdTipoTorneo);
     }
 
     private static TorneoResumen MapearResumen(SqlDataReader l) => new()
@@ -139,7 +139,7 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
         FechaFin = l.Fecha("FechaFin"),
         IdDeporte = l.Entero("IdDeporte"),
         Deporte = l.Texto("Deporte"),
-        IdTipoTorneo = l.Entero("IdTipoTorneo"),
+        IdTipoTorneo = l.EnteroNulo("IdTipoTorneo") ?? 0,
         TipoTorneo = l.Texto("TipoTorneo"),
         IdUsuario = l.Entero("IdUsuario"),
         Creador = l.Texto("Creador"),

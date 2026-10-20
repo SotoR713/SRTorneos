@@ -4,32 +4,51 @@
 <PageTitle>SRTorneos | Torneos</PageTitle>
 
 <section class="page-heading">
-    <div><p class="eyebrow text-accent">MIS COMPETENCIAS</p><h1>Torneos</h1><p>Consulta y administra los torneos que hayas creado.</p></div>
-    <a class="btn btn-accent" href="torneos/nuevo">＋ Nuevo torneo</a>
+    <div><p class="eyebrow text-accent">EXPLORAR</p><h1>Torneos</h1><p>@(EsAdmin ? "Consulta y administra los torneos." : "Calendarios, resultados, posiciones y estadísticas de cada torneo.")</p></div>
+    @if (EsAdmin) { <a class="btn btn-accent" href="torneos/nuevo">＋ Nuevo torneo</a> }
 </section>
 
 <Avisos Aviso="@Aviso" Error="@Error" />
 
 @if (Error is null && ListaTorneos.Count == 0)
 {
-    <section class="empty-state"><div class="empty-ball">🏆</div><h2>Aún no hay torneos</h2><p>Crea tu primer torneo para comenzar a registrar equipos, jugadores y partidos.</p><a class="btn btn-accent" href="torneos/nuevo">Crear mi primer torneo</a></section>
+    <section class="empty-state"><div class="empty-ball">🏆</div><h2>Aún no hay torneos</h2>@if (EsAdmin) { <p>Crea tu primer torneo para comenzar a registrar equipos, jugadores y partidos.</p><a class="btn btn-accent" href="torneos/nuevo">Crear mi primer torneo</a> } else { <p>Pronto se publicarán los torneos.</p> }</section>
 }
 else if (ListaTorneos.Count > 0)
 {
-    <section class="tournament-grid" aria-label="Lista de torneos">
-        @foreach (var torneo in ListaTorneos)
-        {
-            <article class="tournament-card">
-                <div class="tournament-card__top">
-                    <span class="tournament-icon">@Presentacion.IconoDeporte(torneo.Deporte)</span>
-                    <span class="badge-estado @Presentacion.ClaseEstado(torneo.Estado)">@Presentacion.EtiquetaEstado(torneo.Estado)</span>
-                </div>
-                <h2>@torneo.Nombre</h2>
-                <p class="tournament-meta">@torneo.Deporte · @torneo.TipoTorneo</p>
-                <p class="tournament-dates">@Presentacion.Fecha(torneo.FechaInicio) — @Presentacion.Fecha(torneo.FechaFin)</p>
-                <p class="tournament-stats"><span>@torneo.Equipos equipos</span><span>@torneo.PartidosJugados/@torneo.Partidos partidos</span></p>
-                <a class="stretched-link tournament-link" href="torneos/@torneo.Id">Administrar torneo <span>→</span></a>
-            </article>
-        }
-    </section>
+    <form method="get" action="torneos" class="search-bar" role="search">
+        <input type="search" name="q" value="@Busqueda" class="form-control" placeholder="Buscar torneo…" aria-label="Buscar torneo" />
+        @if (!string.IsNullOrEmpty(Deporte)) { <input type="hidden" name="deporte" value="@Deporte" /> }
+        @if (!string.IsNullOrEmpty(Ver)) { <input type="hidden" name="ver" value="@Ver" /> }
+        <button class="btn btn-accent" type="submit">Buscar</button>
+    </form>
+
+    <nav class="filter-chips" aria-label="Filtrar por estado">
+        <a class="chip-filter @(string.IsNullOrEmpty(Ver) ? "is-on" : null)" href="@Url(ver: null)">Todos</a>
+        <a class="chip-filter @(Ver == "curso" ? "is-on" : null)" href="@Url(ver: "curso")">En curso</a>
+        <a class="chip-filter @(Ver == "proximos" ? "is-on" : null)" href="@Url(ver: "proximos")">Próximos</a>
+        <a class="chip-filter @(Ver == "finalizados" ? "is-on" : null)" href="@Url(ver: "finalizados")">Finalizados</a>
+        <a class="chip-filter @(Ver == "siguiendo" ? "is-on" : null)" href="@Url(ver: "siguiendo")">★ Siguiendo</a>
+    </nav>
+    @if (Deportes.Count() > 1)
+    {
+        <nav class="filter-chips" aria-label="Filtrar por deporte">
+            <a class="chip-filter @(string.IsNullOrEmpty(Deporte) ? "is-on" : null)" href="@Url(deporte: null)">Todos los deportes</a>
+            @foreach (var deporte in Deportes)
+            {
+                <a class="chip-filter @(string.Equals(Deporte, deporte, StringComparison.OrdinalIgnoreCase) ? "is-on" : null)" href="@Url(deporte: deporte)">@Presentacion.IconoDeporte(deporte) @deporte</a>
+            }
+        </nav>
+    }
+
+    @if (Filtrados.Count == 0)
+    {
+        <p class="panel__empty">@(Ver == "siguiendo" ? "Aún no sigues ningún torneo. Toca ☆ Seguir en un torneo para verlo aquí y en el inicio." : "No hay torneos con esos filtros.")</p>
+    }
+    else
+    {
+        <section class="tournament-grid" aria-label="Lista de torneos">
+            @foreach (var torneo in Filtrados) { <TarjetaTorneo Torneo="torneo" /> }
+        </section>
+    }
 }

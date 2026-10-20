@@ -35,8 +35,6 @@ INSERT INTO TiposFaltas (Nombre)
 SELECT v.Nombre FROM (VALUES ('Personal'), ('Técnica'), ('Antideportiva'), ('Descalificante')) v(Nombre)
 WHERE NOT EXISTS (SELECT 1 FROM TiposFaltas t WHERE t.Nombre = v.Nombre);
 
--- Usuario administrador (todavía no hay inicio de sesión; solo se usa como "Creador" del torneo).
--- IMPORTANTE: cambia la contraseña y lee la sugerencia 1 de 02-sugerencias-esquema.sql.
-IF NOT EXISTS (SELECT 1 FROM Usuarios WHERE UserName = 'admin')
-    INSERT INTO Usuarios (UserName, Contraseña) VALUES ('admin', 'CAMBIAR');
+-- Usuarios: ya no se crea uno por defecto. Al abrir /login sin usuarios, la app pide crear
+-- el primer administrador (solo desde la misma computadora donde corre la aplicación).
 GO

@@ -1,0 +1,93 @@
+@page "/torneos/{Id:int}/jugadores/{IdJugador:int}"
+@inherits TorneoJugadorBase
+
+<PageTitle>SRTorneos | @(Jugador?.Nombre ?? "Jugador")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="estadisticas" />
+    <Avisos Error="@Error" />
+
+    @if (Jugador is not null)
+    {
+        <a class="back-link" href="torneos/@Id/equipos/@Jugador.IdEquipo">← @Jugador.Equipo</a>
+
+        <section class="profile-hero" style="--escudo: @Presentacion.ColorEquipo(Jugador.Equipo)">
+            <span class="profile-hero__number">@Jugador.Numero</span>
+            <div class="profile-hero__info">
+                <p class="eyebrow">@(string.IsNullOrWhiteSpace(Jugador.Posicion) ? "JUGADOR" : Jugador.Posicion.ToUpperInvariant())</p>
+                <h1>@Jugador.Nombre</h1>
+                <p><a href="torneos/@Id/equipos/@Jugador.IdEquipo"><Escudo Nombre="@Jugador.Equipo" Tamano="xs" /> @Jugador.Equipo</a></p>
+            </div>
+            <div class="profile-hero__actions">
+                <BotonCompartir Texto="@($"{Jugador.Nombre} (#{Jugador.Numero}, {Jugador.Equipo}): {Jugador.Puntos} puntos en {Torneo.Nombre}")" Ruta="@($"torneos/{Id}/jugadores/{IdJugador}")" />
+            </div>
+        </section>
+
+        <section class="stat-tiles">
+            <div class="stat-tile stat-tile--accent"><strong>@Jugador.Puntos</strong><small>Puntos</small></div>
+            <div class="stat-tile"><strong>@Presentacion.Decimal(Jugador.Promedio)</strong><small>Por partido</small></div>
+            <div class="stat-tile"><strong>@(Jugador.Puntos > 0 ? $"{LugarAnotadores}°" : "—")</strong><small>Anotadores (@TotalJugadores)</small></div>
+            @foreach (var tipo in Tipos)
+            {
+                <div class="stat-tile"><strong>@Jugador.Cantidad(tipo.Valor)</strong><small>@tipo.Nombre</small></div>
+            }
+            <div class="stat-tile"><strong>@MejorPartido</strong><small>Mejor partido</small></div>
+            <div class="stat-tile"><strong>@Jugador.Faltas</strong><small>Faltas</small></div>
+        </section>
+
+        <section class="panel">
+            <header class="panel__header"><h2>Partido por partido</h2><span class="panel__hint">@Jugador.PartidosEquipo jugados por su equipo</span></header>
+            @if (PartidosEquipo.Count == 0)
+            {
+                <p class="panel__empty">Su equipo todavía no tiene partidos programados.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="data-table stats-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th><th>Rival</th><th>Resultado</th>
+                                <th class="num">PTS</th>
+                                @foreach (var tipo in Tipos) { <th class="num" title="@tipo.Nombre">@tipo.Abreviatura</th> }
+                                <th class="num">FAL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var partido in PartidosEquipo)
+                            {
+                                var linea = LineaDe(partido.Id);
+                                var rival = partido.Rival(Jugador.IdEquipo);
+                                var marcador = partido.MarcadorDe(Jugador.IdEquipo);
+                                <tr>
+                                    <td class="nowrap"><a href="torneos/@Id/partidos/@partido.Id">@Presentacion.DiaRelativo(partido.Fecha)</a></td>
+                                    <td><span class="player-cell"><Escudo Nombre="@rival.Nombre" Tamano="xs" /><span>@(partido.IdEquipo1 == Jugador.IdEquipo ? "vs" : "en") @rival.Nombre</span></span></td>
+                                    <td class="nowrap">
+                                        @if (marcador is { } m)
+                                        {
+                                            var (aFavor, enContra) = m;
+                                            <span class="result-badge @(aFavor > enContra ? "is-win" : aFavor < enContra ? "is-loss" : "is-draw")">@(aFavor > enContra ? "G" : aFavor < enContra ? "P" : "E")</span>
+                                            <span>@aFavor–@enContra</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">@Presentacion.Hora(partido.Fecha)</span>
+                                        }
+                                    </td>
+                                    <td class="num"><strong>@(partido.Jugado ? linea.Puntos.ToString() : "")</strong></td>
+                                    @foreach (var tipo in Tipos) { <td class="num">@(partido.Jugado ? linea.Cantidad(tipo.Valor).ToString() : "")</td> }
+                                    <td class="num">@(partido.Jugado || linea.Faltas > 0 ? linea.Faltas.ToString() : "")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+}

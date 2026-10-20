@@ -1,0 +1,102 @@
+@page "/torneos/{Id:int}/partidos/generar"
+@attribute [Authorize]
+@inherits GenerarCalendarioBase
+
+<PageTitle>SRTorneos | Generar calendario</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="partidos" />
+    <section class="sub-heading">
+        <a class="back-link" href="torneos/@Id/partidos">← Calendario</a>
+        <h2>Generar calendario de liga</h2>
+        <p>Todos contra todos: cada pareja se enfrenta una vez (o dos con ida y vuelta), nadie juega dos veces en la misma jornada, los descansos se reparten y la localía se alterna. Después puedes editar cualquier partido.</p>
+    </section>
+
+    <Avisos Error="@Error" />
+
+    @if (FormGenerador is not null)
+    {
+        <div class="split-layout split-layout--wide-form">
+            <section class="panel">
+                <header class="panel__header">
+                    <h2>Vista previa</h2>
+                    @if (Propuesta.Count > 0) { <span class="panel__hint">@Propuesta.Count partidos · @Propuesta.Max(p => p.Jornada) jornadas · @Presentacion.Fecha(DateOnly.FromDateTime(Propuesta.Min(p => p.Fecha))) al @Presentacion.Fecha(DateOnly.FromDateTime(Propuesta.Max(p => p.Fecha)))</span> }
+                </header>
+                @if (Propuesta.Count == 0)
+                {
+                    <p class="panel__empty">Ajusta las opciones y pulsa «Vista previa».</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="data-table data-table--compact">
+                            <thead><tr><th>Fecha</th><th>Partido</th><th>Lugar</th></tr></thead>
+                            <tbody>
+                                @foreach (var jornada in Propuesta.GroupBy(p => p.Jornada))
+                                {
+                                    <tr class="group-row"><td colspan="3">Jornada @jornada.Key @if (Descansa(jornada.Key) is string descanso) { <span class="text-muted"> · descansa @descanso</span> }</td></tr>
+                                    @foreach (var partido in jornada)
+                                    {
+                                        <tr>
+                                            <td class="nowrap">@Presentacion.FechaCorta(partido.Fecha) <small class="text-muted">@Presentacion.Hora(partido.Fecha)</small></td>
+                                            <td><strong>@NombreEquipo(partido.IdEquipo1)</strong> <span class="text-muted">vs</span> <strong>@NombreEquipo(partido.IdEquipo2)</strong></td>
+                                            <td>@NombreLugar(partido.IdLugar)</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+
+            <section class="panel panel--form">
+                <header class="panel__header"><h2>Opciones</h2></header>
+                <EditForm Model="FormGenerador" FormName="generador" OnValidSubmit="ProcesarAsync">
+                    <DataAnnotationsValidator />
+                    <input type="hidden" name="FormGenerador.Semilla" value="@FormGenerador.Semilla" />
+
+                    <p class="panel__hint">@Equipos.Count equipos inscritos.</p>
+
+                    <div class="form-grid">
+                        <div class="form-field"><label for="primera">Primera jornada</label><InputDate id="primera" class="form-control" @bind-Value="FormGenerador.PrimeraFecha" min="@($"{Torneo.FechaInicio:yyyy-MM-dd}")" max="@($"{Torneo.FechaFin:yyyy-MM-dd}")" /></div>
+                        <div class="form-field"><label for="hora">Hora del primer partido</label><InputDate id="hora" Type="InputDateType.Time" class="form-control" @bind-Value="FormGenerador.Hora" /></div>
+                        <div class="form-field"><label for="dias">Días entre jornadas</label><InputNumber id="dias" class="form-control" @bind-Value="FormGenerador.DiasEntreJornadas" min="1" max="60" /><ValidationMessage For="@(() => FormGenerador.DiasEntreJornadas)" /></div>
+                        <div class="form-field"><label for="minutos">Minutos entre partidos</label><InputNumber id="minutos" class="form-control" @bind-Value="FormGenerador.MinutosEntrePartidos" min="15" max="600" /><small class="field-hint">Si una cancha tiene varios partidos el mismo día.</small><ValidationMessage For="@(() => FormGenerador.MinutosEntrePartidos)" /></div>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Canchas</label>
+                        @for (int i = 0; i < FormGenerador.Lugares!.Count; i++)
+                        {
+                            var lugar = FormGenerador.Lugares[i];
+                            <label class="check-row">
+                                <input type="hidden" name="@($"FormGenerador.Lugares[{i}].IdLugar")" value="@lugar.IdLugar" />
+                                <input type="checkbox" name="@($"FormGenerador.Lugares[{i}].Elegido")" value="true" checked="@lugar.Elegido" />
+                                @NombreLugar(lugar.IdLugar)
+                            </label>
+                        }
+                        @if (FormGenerador.Lugares.Count == 0) { <p class="panel__empty">No hay lugares. <a href="lugares">Registra uno</a>.</p> }
+                    </div>
+
+                    <label class="check-row"><InputCheckbox @bind-Value="FormGenerador.IdaYVuelta" /> Ida y vuelta (cada pareja juega dos veces, alternando local)</label>
+                    @if (LigaSinResultado > 0)
+                    {
+                        <label class="check-row check-row--warn"><InputCheckbox @bind-Value="FormGenerador.Reemplazar" /> Reemplazar los @LigaSinResultado partidos de liga ya programados (sin resultado)</label>
+                    }
+
+                    <div class="form-actions form-actions--stack">
+                        <button class="btn btn-light" type="submit" name="FormGenerador.Accion" value="previsualizar">Vista previa</button>
+                        <button class="btn btn-light" type="submit" name="FormGenerador.Accion" value="sortear">Otro sorteo</button>
+                        <button class="btn btn-accent" type="submit" name="FormGenerador.Accion" value="generar">Guardar calendario</button>
+                    </div>
+                </EditForm>
+            </section>
+        </div>
+    }
+}

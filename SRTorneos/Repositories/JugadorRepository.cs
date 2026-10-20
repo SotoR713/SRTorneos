@@ -41,15 +41,6 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
             VALUES (@numero, @nombre, @posicion);
             """, p => ParametrosJugador(p, jugador), cancellationToken);
 
-    public async Task<Dictionary<int, Jugador>> ObtenerNumerosOcupadosAsync(CancellationToken cancellationToken = default)
-    {
-        var jugadores = await ConsultarAsync("SELECT Id, Numero, Nombre, Posicion FROM Jugadores;",
-            MapearJugador, cancellationToken: cancellationToken);
-
-        // Si en algún momento se quita el índice único, se conserva el primero que aparezca.
-        return jugadores.GroupBy(j => j.Numero).ToDictionary(g => g.Key, g => g.First());
-    }
-
     public async Task<bool> EliminarAsync(int id, CancellationToken cancellationToken = default)
         => await EjecutarAsync("DELETE FROM Jugadores WHERE Id = @id;", p => p.Entero("@id", id), cancellationToken) == 1;
 
@@ -126,6 +117,86 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
                 p.Entero("@cantidad", cantidad);
             }, cancellationToken);
 
+    public async Task<List<EstadisticaJugador>> ObtenerEstadisticasAsync(int idTorneo, CancellationToken cancellationToken = default)
+    {
+        var jugadores = await ConsultarAsync("""
+            SELECT j.Id AS IdJugador, j.Nombre, j.Numero, j.Posicion, a.IdEquipo, e.Nombre AS Equipo,
+                   (SELECT COUNT(*) FROM Partidos p
+                     WHERE p.IdTorneo = a.IdTorneo
+                       AND (p.IdEquipo1 = a.IdEquipo OR p.IdEquipo2 = a.IdEquipo)
+                       AND EXISTS (SELECT 1 FROM Puntajes s WHERE s.IdPartido = p.Id)) AS PartidosEquipo,
+                   (SELECT COUNT(DISTINCT an.IdPartido) FROM Anotacion an
+                     INNER JOIN Partidos p ON p.Id = an.IdPartido
+                     WHERE an.IdJugador = a.IdJugador AND p.IdTorneo = a.IdTorneo) AS PartidosAnotando,
+                   (SELECT COUNT(*) FROM Faltas f WHERE f.IdJugador = a.IdJugador AND f.IdTorneo = a.IdTorneo) AS Faltas
+            FROM Alineaciones a
+            INNER JOIN Jugadores j ON j.Id = a.IdJugador
+            INNER JOIN Equipos e ON e.Id = a.IdEquipo
+            WHERE a.IdTorneo = @idTorneo;
+            """,
+            l => new EstadisticaJugador
+            {
+                IdJugador = l.Entero("IdJugador"),
+                Nombre = l.Texto("Nombre"),
+                Numero = l.Entero("Numero"),
+                Posicion = l.Texto("Posicion"),
+                IdEquipo = l.Entero("IdEquipo"),
+                Equipo = l.Texto("Equipo"),
+                PartidosEquipo = l.Entero("PartidosEquipo"),
+                PartidosAnotando = l.Entero("PartidosAnotando"),
+                Faltas = l.Entero("Faltas")
+            },
+            p => p.Entero("@idTorneo", idTorneo), cancellationToken);
+
+        var anotaciones = await ConsultarAsync("""
+            SELECT an.IdJugador, an.Puntos AS Valor, COUNT(*) AS Cantidad
+            FROM Anotacion an
+            INNER JOIN Partidos p ON p.Id = an.IdPartido
+            WHERE p.IdTorneo = @idTorneo
+            GROUP BY an.IdJugador, an.Puntos;
+            """,
+            l => (IdJugador: l.Entero("IdJugador"), Valor: l.Entero("Valor"), Cantidad: l.Entero("Cantidad")),
+            p => p.Entero("@idTorneo", idTorneo), cancellationToken);
+
+        var porJugador = jugadores.GroupBy(j => j.IdJugador).ToDictionary(g => g.Key, g => g.First());
+        foreach (var (idJugador, valor, cantidad) in anotaciones)
+        {
+            if (porJugador.TryGetValue(idJugador, out var jugador)) jugador.Anotaciones[valor] = cantidad;
+        }
+
+        return porJugador.Values.ToList();
+    }
+
+    public async Task<Dictionary<int, LineaJugadorPartido>> ObtenerLineasAsync(int idTorneo, int idJugador, CancellationToken cancellationToken = default)
+    {
+        var lineas = new Dictionary<int, LineaJugadorPartido>();
+        LineaJugadorPartido Linea(int idPartido)
+            => lineas.TryGetValue(idPartido, out var linea) ? linea : lineas[idPartido] = new LineaJugadorPartido { IdPartido = idPartido };
+
+        var anotaciones = await ConsultarAsync("""
+            SELECT an.IdPartido, an.Puntos AS Valor, COUNT(*) AS Cantidad
+            FROM Anotacion an
+            INNER JOIN Partidos p ON p.Id = an.IdPartido
+            WHERE an.IdJugador = @idJugador AND p.IdTorneo = @idTorneo
+            GROUP BY an.IdPartido, an.Puntos;
+            """,
+            l => (IdPartido: l.Entero("IdPartido"), Valor: l.Entero("Valor"), Cantidad: l.Entero("Cantidad")),
+            p => ParametrosJugadorTorneo(p, idTorneo, idJugador), cancellationToken);
+        foreach (var (idPartido, valor, cantidad) in anotaciones) Linea(idPartido).Anotaciones[valor] = cantidad;
+
+        var faltas = await ConsultarAsync("""
+            SELECT f.IdPartido, COUNT(*) AS Faltas
+            FROM Faltas f
+            WHERE f.IdJugador = @idJugador AND f.IdTorneo = @idTorneo
+            GROUP BY f.IdPartido;
+            """,
+            l => (IdPartido: l.Entero("IdPartido"), Faltas: l.Entero("Faltas")),
+            p => ParametrosJugadorTorneo(p, idTorneo, idJugador), cancellationToken);
+        foreach (var (idPartido, cantidad) in faltas) Linea(idPartido).Faltas = cantidad;
+
+        return lineas;
+    }
+
     public Task<int> CrearYAlinearAsync(int idTorneo, int idEquipo, Jugador jugador, CancellationToken cancellationToken = default)
         => EnTransaccionAsync(async (conexion, transaccion) =>
         {
@@ -144,12 +215,12 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
             return idJugador;
         }, cancellationToken);
 
-    public Task AlinearAsync(int idTorneo, int idEquipo, int idJugador, CancellationToken cancellationToken = default)
-        => EjecutarAsync(SqlAlinear, p =>
+    public async Task<bool> AlinearAsync(int idTorneo, int idEquipo, int idJugador, CancellationToken cancellationToken = default)
+        => await EjecutarAsync(SqlAlinear, p =>
         {
             ParametrosEquipoTorneo(p, idTorneo, idEquipo);
             p.Entero("@idJugador", idJugador);
-        }, cancellationToken);
+        }, cancellationToken) == 1;
 
     public async Task<bool> ActualizarAsync(Jugador jugador, CancellationToken cancellationToken = default)
         => await EjecutarAsync("UPDATE Jugadores SET Numero = @numero, Nombre = @nombre, Posicion = @posicion WHERE Id = @id;", p =>
@@ -175,23 +246,19 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
 
             if (estadisticas > 0) return false;
 
-            // Quita la alineación y, si el jugador ya no se usa en ningún lado, elimina el registro huérfano.
-            await EjecutarAsync(conexion, transaccion, """
-                DELETE FROM Alineaciones WHERE IdTorneo = @idTorneo AND IdEquipo = @idEquipo AND IdJugador = @idJugador;
-
-                DELETE FROM Jugadores
-                WHERE Id = @idJugador
-                  AND NOT EXISTS (SELECT 1 FROM Alineaciones WHERE IdJugador = @idJugador)
-                  AND NOT EXISTS (SELECT 1 FROM Anotacion WHERE IdJugador = @idJugador)
-                  AND NOT EXISTS (SELECT 1 FROM Faltas WHERE IdJugador = @idJugador);
-                """, Parametros, cancellationToken);
+            // Solo se quita de la plantilla; el jugador sigue en el catálogo (/jugadores).
+            await EjecutarAsync(conexion, transaccion,
+                "DELETE FROM Alineaciones WHERE IdTorneo = @idTorneo AND IdEquipo = @idEquipo AND IdJugador = @idJugador;",
+                Parametros, cancellationToken);
 
             return true;
         }, cancellationToken);
 
+    /// <summary>Inserta solo si el jugador no está ya en algún equipo del torneo.</summary>
     private const string SqlAlinear = """
         INSERT INTO Alineaciones (IdTorneo, IdEquipo, IdJugador)
-        VALUES (@idTorneo, @idEquipo, @idJugador);
+        SELECT @idTorneo, @idEquipo, @idJugador
+        WHERE NOT EXISTS (SELECT 1 FROM Alineaciones WHERE IdTorneo = @idTorneo AND IdJugador = @idJugador);
         """;
 
     private static void ParametrosJugador(SqlParameterCollection p, Jugador jugador)
@@ -199,6 +266,12 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
         p.Entero("@numero", jugador.Numero);
         p.Texto("@nombre", jugador.Nombre.Trim(), 50);
         p.Texto("@posicion", jugador.Posicion.Trim(), 20);
+    }
+
+    private static void ParametrosJugadorTorneo(SqlParameterCollection p, int idTorneo, int idJugador)
+    {
+        p.Entero("@idTorneo", idTorneo);
+        p.Entero("@idJugador", idJugador);
     }
 
     private static void ParametrosEquipoTorneo(SqlParameterCollection p, int idTorneo, int idEquipo)

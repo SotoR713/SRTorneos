@@ -1,7 +1,1 @@
-namespace SRTorneos.Models;
-
-public class UsuarioResumen
-{
-    public int Id { get; set; }
-    public string UserName { get; set; } = string.Empty;
-}
+// Archivo obsoleto (reemplazado por Models/Usuario.cs). Puedes eliminarlo.

@@ -20,90 +20,70 @@ else
         <div class="stat-card"><small>Creado por</small><strong>@Torneo.Creador</strong></div>
     </section>
 
-    @if (Torneo.Equipos < 2)
+    @if (Campeon is not null)
+    {
+        <section class="champion-banner">
+            <span class="champion-banner__icon">🏆</span>
+            <div><small>CAMPEÓN</small><strong>@Campeon</strong></div>
+        </section>
+    }
+
+    @if (EsAdmin && Torneo.Equipos < 2)
     {
         <section class="next-step">
             <span class="quick-icon">1</span>
-            <div><strong>Inscribe al menos dos equipos</strong><small>Después podrás cargar sus plantillas y programar partidos.</small></div>
+            <div><strong>Inscribe al menos dos equipos</strong><small>Después podrás cargar sus plantillas y armar el calendario.</small></div>
             <a class="btn btn-accent" href="torneos/@Torneo.Id/equipos">Inscribir equipos</a>
         </section>
     }
-    else if (Torneo.Partidos == 0)
+    else if (EsAdmin && Torneo.Partidos == 0)
     {
         <section class="next-step">
             <span class="quick-icon">2</span>
-            <div><strong>Programa el primer partido</strong><small>Elige equipos, fecha y lugar.</small></div>
-            <a class="btn btn-accent" href="torneos/@Torneo.Id/partidos">Programar partidos</a>
+            <div><strong>Genera el calendario</strong><small>Todos contra todos, con jornadas, canchas y horarios repartidos de forma justa.</small></div>
+            <a class="btn btn-accent" href="torneos/@Torneo.Id/partidos/generar">Generar calendario</a>
         </section>
     }
 
     <div class="panel-grid">
-        <section class="panel">
-            <header class="panel__header"><h2>Próximos partidos</h2><a href="torneos/@Torneo.Id/partidos">Ver todos →</a></header>
+        <section class="feed-section">
+            <header class="feed-section__head"><h2>Próximos partidos</h2><a href="torneos/@Torneo.Id/partidos">Ver todos</a></header>
             @if (Proximos.Count == 0)
             {
                 <p class="panel__empty">No hay partidos pendientes.</p>
             }
-            else
-            {
-                <ul class="match-list">
-                    @foreach (var partido in Proximos)
-                    {
-                        <li>
-                            <a href="torneos/@Torneo.Id/partidos/@partido.Id">
-                                <span class="match-list__date">@Presentacion.FechaCorta(partido.Fecha)<small>@Presentacion.Hora(partido.Fecha)</small></span>
-                                <span class="match-list__teams">@partido.Equipo1 <em>vs</em> @partido.Equipo2</span>
-                                <span class="match-list__place">@partido.Lugar</span>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            }
+            <div class="match-grid match-grid--1">@foreach (var partido in Proximos) { <TarjetaPartido Partido="partido" /> }</div>
         </section>
 
-        <section class="panel">
-            <header class="panel__header"><h2>Últimos resultados</h2><a href="torneos/@Torneo.Id/posiciones">Posiciones →</a></header>
+        <section class="feed-section">
+            <header class="feed-section__head"><h2>Últimos resultados</h2><a href="torneos/@Torneo.Id/posiciones">Posiciones</a></header>
             @if (Recientes.Count == 0)
             {
                 <p class="panel__empty">Aún no hay resultados capturados.</p>
             }
+            <div class="match-grid match-grid--1">@foreach (var partido in Recientes) { <TarjetaPartido Partido="partido" /> }</div>
+        </section>
+
+        <section class="leader-card leader-card--panel">
+            <header><h2>Líderes de anotación</h2><a href="torneos/@Torneo.Id/estadisticas">Estadísticas</a></header>
+            @if (Lideres.Count == 0)
+            {
+                <p class="leader-card__empty">Captura los puntos por jugador en los resultados para ver a los líderes.</p>
+            }
             else
             {
-                <ul class="match-list">
-                    @foreach (var partido in Recientes)
+                <ol>
+                    @foreach (var anotador in Lideres)
                     {
                         <li>
-                            <a href="torneos/@Torneo.Id/partidos/@partido.Id">
-                                <span class="match-list__date">@Presentacion.FechaCorta(partido.Fecha)</span>
-                                <span class="match-list__teams">
-                                    <b class="@(partido.GanoLocal ? "winner" : null)">@partido.Equipo1 @partido.Puntos1</b>
-                                    <em>–</em>
-                                    <b class="@(partido.GanoVisitante ? "winner" : null)">@partido.Puntos2 @partido.Equipo2</b>
-                                </span>
+                            <a href="torneos/@Torneo.Id/jugadores/@anotador.IdJugador">
+                                <Escudo Nombre="@anotador.Equipo" Tamano="xs" />
+                                <span class="leader-card__name">@anotador.Nombre<small>#@anotador.Numero · @anotador.Equipo · @Presentacion.Decimal(anotador.Promedio) por partido</small></span>
+                                <b>@anotador.Puntos</b>
                             </a>
                         </li>
                     }
-                </ul>
-            }
-        </section>
-
-        <section class="panel">
-            <header class="panel__header"><h2>Líderes de anotación</h2></header>
-            @if (Lideres.Count == 0)
-            {
-                <p class="panel__empty">Captura los puntos por jugador en los resultados para ver a los líderes.</p>
-            }
-            else
-            {
-                <table class="data-table data-table--compact">
-                    <thead><tr><th>#</th><th>Jugador</th><th class="num">Pts</th><th class="num">Prom.</th></tr></thead>
-                    <tbody>
-                        @foreach (var (anotador, indice) in Lideres.Select((a, i) => (a, i + 1)))
-                        {
-                            <tr><td>@indice</td><td><strong>@anotador.Nombre</strong><small class="d-block text-muted">#@anotador.Numero · @anotador.Equipo</small></td><td class="num">@anotador.Puntos</td><td class="num">@anotador.Promedio</td></tr>
-                        }
-                    </tbody>
-                </table>
+                </ol>
             }
         </section>
     </div>

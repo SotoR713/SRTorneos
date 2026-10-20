@@ -1,3 +1,34 @@
 @inherits LayoutComponentBase
-<div class="page"><aside class="sidebar"><NavMenu /></aside><main><header class="top-row"><span class="top-status"><span class="status-dot"></span>Panel de administración</span><span class="user-chip">Usuario <strong>Invitado</strong></span></header><article class="content">@Body</article></main></div>
+
+<div class="page">
+    <aside class="sidebar"><NavMenu /></aside>
+    <main>
+        <header class="top-row">
+            <a class="app-brand" href=""><span aria-hidden="true">🏆</span> SRTorneos</a>
+            <span class="top-status"><span class="status-dot"></span>@(EsAdmin ? "Panel de administración" : "Consulta pública")</span>
+            @if (EsAdmin)
+            {
+                <form method="post" action="logout" class="user-chip">
+                    <AntiforgeryToken />
+                    <span class="user-chip__name">Usuario <strong>@HttpContext!.User.Identity!.Name</strong></span>
+                    <button type="submit" class="btn btn-sm btn-light">Salir</button>
+                </form>
+            }
+            else
+            {
+                <a class="btn btn-sm btn-light top-login" href="login">Iniciar sesión</a>
+            }
+        </header>
+        <article class="content">
+            @Body
+        </article>
+    </main>
+    <BarraInferior />
+</div>
 <div id="blazor-error-ui" data-nosnippet>Ocurrió un error inesperado. <a href="." class="reload">Recargar</a><span class="dismiss">🗙</span></div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    private bool EsAdmin => HttpContext?.User.Identity?.IsAuthenticated == true;
+}

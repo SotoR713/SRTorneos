@@ -10,8 +10,6 @@ public class CatalogosBase : PaginaBase
 
     [Parameter] public string? Clave { get; set; }
 
-    [SupplyParameterFromQuery(Name = "editar")]
-    public int? Editar { get; set; }
 
     [SupplyParameterFromForm(FormName = "catalogo")]
     protected CatalogoFormulario? FormCatalogo { get; set; }
@@ -93,7 +91,12 @@ public class CatalogosBase : PaginaBase
 
     protected async Task EliminarAsync()
     {
-        if (Definicion is null || Lista.All(e => e.Id != EliminarId)) return;
+        if (Definicion is null) return;
+        if (Lista.All(e => e.Id != EliminarId))
+        {
+            Error = "El registro ya no existe o ya fue eliminado. Recarga la página.";
+            return;
+        }
 
         if (await IntentarAsync(() => CatalogoRepository.EliminarAsync(Definicion, EliminarId),
                 "No se pudo eliminar el registro.",

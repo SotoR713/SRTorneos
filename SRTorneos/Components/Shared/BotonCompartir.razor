@@ -1,0 +1,19 @@
+@inject NavigationManager Navegacion
+@* En el celular abre el menú de compartir del sistema; si el navegador no lo tiene, abre WhatsApp. *@
+<a class="btn-pill @Clase" href="@Presentacion.UrlWhatsApp($"{Texto} {Absoluta}")" target="_blank" rel="noopener"
+   data-compartir data-texto="@Texto" data-url="@Absoluta">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" /></svg>
+    <span>@Etiqueta</span>
+</a>
+
+@code {
+    [Parameter, EditorRequired] public string Texto { get; set; } = string.Empty;
+
+    /// <summary>Ruta relativa de la página a compartir (por ejemplo "torneos/3").</summary>
+    [Parameter, EditorRequired] public string Ruta { get; set; } = string.Empty;
+
+    [Parameter] public string Etiqueta { get; set; } = "Compartir";
+    [Parameter] public string? Clase { get; set; }
+
+    private string Absoluta => Navegacion.ToAbsoluteUri(Ruta).ToString();
+}

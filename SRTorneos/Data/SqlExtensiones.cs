@@ -11,6 +11,9 @@ public static class SqlExtensiones
     public static void Entero(this SqlParameterCollection parametros, string nombre, int valor)
         => parametros.Add(nombre, SqlDbType.Int).Value = valor;
 
+    public static void EnteroNulo(this SqlParameterCollection parametros, string nombre, int? valor)
+        => parametros.Add(nombre, SqlDbType.Int).Value = valor.HasValue ? valor.Value : DBNull.Value;
+
     public static void Texto(this SqlParameterCollection parametros, string nombre, string valor, int largo)
         => parametros.Add(nombre, SqlDbType.VarChar, largo).Value = valor;
 

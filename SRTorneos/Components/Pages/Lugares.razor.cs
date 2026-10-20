@@ -8,8 +8,6 @@ public class LugaresBase : PaginaBase
 {
     [Inject] protected ILugarRepository LugarRepository { get; set; } = default!;
 
-    [SupplyParameterFromQuery(Name = "editar")]
-    public int? Editar { get; set; }
 
     [SupplyParameterFromForm(FormName = "lugar")]
     protected Lugar? FormLugar { get; set; }
@@ -51,7 +49,11 @@ public class LugaresBase : PaginaBase
 
     protected async Task EliminarAsync()
     {
-        if (Lista.All(l => l.Id != EliminarId)) return;
+        if (Lista.All(l => l.Id != EliminarId))
+        {
+            Error = "El registro ya no existe o ya fue eliminado. Recarga la página.";
+            return;
+        }
 
         if (await IntentarAsync(() => LugarRepository.EliminarAsync(EliminarId),
                 "No se pudo eliminar el lugar.",

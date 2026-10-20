@@ -8,8 +8,6 @@ public class EquiposBase : PaginaBase
 {
     [Inject] protected IEquipoRepository EquipoRepository { get; set; } = default!;
 
-    [SupplyParameterFromQuery(Name = "editar")]
-    public int? Editar { get; set; }
 
     [SupplyParameterFromForm(FormName = "equipo")]
     protected Equipo? FormEquipo { get; set; }
@@ -61,7 +59,11 @@ public class EquiposBase : PaginaBase
 
     protected async Task EliminarAsync()
     {
-        if (Lista.All(e => e.Id != EliminarId)) return;
+        if (Lista.All(e => e.Id != EliminarId))
+        {
+            Error = "El registro ya no existe o ya fue eliminado. Recarga la página.";
+            return;
+        }
 
         if (await IntentarAsync(() => EquipoRepository.EliminarAsync(EliminarId),
                 "No se pudo eliminar el equipo.",

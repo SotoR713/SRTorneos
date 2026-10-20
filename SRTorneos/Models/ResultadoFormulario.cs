@@ -12,7 +12,8 @@ public class ResultadoFormulario
     [Range(0, 999, ErrorMessage = "Los puntos deben estar entre 0 y 999.")]
     public int? Puntos2 { get; set; }
 
-    public List<AnotacionFila> Anotaciones { get; set; } = [];
+    /// <summary>Puede llegar nula en un POST si en pantalla no había casillas por jugador.</summary>
+    public List<AnotacionFila>? Anotaciones { get; set; } = [];
 }
 
 /// <summary>
@@ -23,8 +24,11 @@ public class AnotacionFila
 {
     public int IdJugador { get; set; }
 
-    public List<int?> Cantidades { get; set; } = [];
+    /// <summary>Puede llegar nula en un POST si no se envió ninguna casilla (SSR no usa el inicializador).</summary>
+    public List<int?>? Cantidades { get; set; } = [];
+
+    public int Cantidad(int indice) => Cantidades is not null && indice < Cantidades.Count ? Cantidades[indice] ?? 0 : 0;
 
     public int Puntos(IReadOnlyList<TipoAnotacion> tipos)
-        => tipos.Select((t, i) => t.Valor * (i < Cantidades.Count ? Cantidades[i] ?? 0 : 0)).Sum();
+        => tipos.Select((t, i) => t.Valor * Cantidad(i)).Sum();
 }

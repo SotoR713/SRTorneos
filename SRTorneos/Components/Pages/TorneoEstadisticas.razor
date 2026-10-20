@@ -1,0 +1,98 @@
+@page "/torneos/{Id:int}/estadisticas"
+@inherits TorneoEstadisticasBase
+
+<PageTitle>SRTorneos | Estadísticas de @(Torneo?.Nombre ?? "torneo")</PageTitle>
+
+@if (Torneo is null)
+{
+    <Avisos Error="@Error" />
+}
+else
+{
+    <TorneoEncabezado Torneo="Torneo" Seccion="estadisticas" />
+    <Avisos Error="@Error" />
+
+    @if (Jugadores.Count == 0)
+    {
+        <p class="panel__empty">Todavía no hay jugadores en las plantillas de este torneo.</p>
+    }
+    else
+    {
+        <div class="leader-grid">
+            @foreach (var (titulo, unidad, top) in Lideres)
+            {
+                <section class="leader-card">
+                    <header><h2>@titulo</h2><small>@unidad</small></header>
+                    @if (top.Count == 0)
+                    {
+                        <p class="leader-card__empty">Sin datos todavía</p>
+                    }
+                    else
+                    {
+                        <ol>
+                            @foreach (var (jugador, valor) in top)
+                            {
+                                <li>
+                                    <a href="torneos/@Id/jugadores/@jugador.IdJugador">
+                                        <Escudo Nombre="@jugador.Equipo" Tamano="xs" />
+                                        <span class="leader-card__name">@jugador.Nombre<small>#@jugador.Numero · @jugador.Equipo</small></span>
+                                        <b>@valor</b>
+                                    </a>
+                                </li>
+                            }
+                        </ol>
+                    }
+                </section>
+            }
+        </div>
+
+        <section class="panel">
+            <header class="panel__header">
+                <h2>Todos los jugadores <span class="count-pill">@Tabla.Count</span></h2>
+            </header>
+            <nav class="filter-chips" aria-label="Filtrar por equipo">
+                <a class="chip-filter @(IdEquipo is null ? "is-on" : null)" href="@UrlEquipo(null)">Todos</a>
+                @foreach (var (idEquipo, nombre) in Equipos)
+                {
+                    <a class="chip-filter @(IdEquipo == idEquipo ? "is-on" : null)" href="@UrlEquipo(idEquipo)">@nombre</a>
+                }
+            </nav>
+            <div class="table-responsive">
+                <table class="data-table stats-table">
+                    <thead>
+                        <tr>
+                            <th><a href="@UrlOrden("nombre")">Jugador</a></th>
+                            <th class="num" title="Partidos de su equipo con resultado">PJ</th>
+                            <th class="num @(Orden is null or "pts" ? "is-sorted" : null)"><a href="@UrlOrden("pts")">PTS</a></th>
+                            <th class="num @(Orden == "prom" ? "is-sorted" : null)"><a href="@UrlOrden("prom")">PROM</a></th>
+                            @foreach (var tipo in Tipos)
+                            {
+                                <th class="num @(Orden == $"v{tipo.Valor}" ? "is-sorted" : null)" title="@tipo.Nombre"><a href="@UrlOrden($"v{tipo.Valor}")">@tipo.Abreviatura</a></th>
+                            }
+                            <th class="num @(Orden == "fal" ? "is-sorted" : null)"><a href="@UrlOrden("fal")">FAL</a></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var jugador in Tabla)
+                        {
+                            <tr>
+                                <td>
+                                    <a class="player-cell" href="torneos/@Id/jugadores/@jugador.IdJugador">
+                                        <Escudo Nombre="@jugador.Equipo" Tamano="xs" />
+                                        <span><strong>@jugador.Nombre</strong><small>#@jugador.Numero · @jugador.Equipo</small></span>
+                                    </a>
+                                </td>
+                                <td class="num">@jugador.PartidosEquipo</td>
+                                <td class="num"><strong>@jugador.Puntos</strong></td>
+                                <td class="num">@Presentacion.Decimal(jugador.Promedio)</td>
+                                @foreach (var tipo in Tipos) { <td class="num">@jugador.Cantidad(tipo.Valor)</td> }
+                                <td class="num">@jugador.Faltas</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="field-hint">PJ y promedio cuentan los partidos con resultado de su equipo; la base no registra si el jugador asistió.</p>
+        </section>
+    }
+}

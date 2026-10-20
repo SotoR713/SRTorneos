@@ -28,6 +28,11 @@ public class TorneoFormulario : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (FechaInicio.Year is < 2000 or > 2100 || FechaFin.Year is < 2000 or > 2100)
+        {
+            yield return new ValidationResult("Las fechas deben estar entre los años 2000 y 2100.", [nameof(FechaInicio)]);
+        }
+
         if (FechaFin < FechaInicio)
         {
             yield return new ValidationResult(

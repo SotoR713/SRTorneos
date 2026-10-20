@@ -10,8 +10,6 @@ public class TorneoPartidosBase : TorneoPaginaBase
     [Inject] protected IEquipoRepository EquipoRepository { get; set; } = default!;
     [Inject] protected ILugarRepository LugarRepository { get; set; } = default!;
 
-    [SupplyParameterFromQuery(Name = "editar")]
-    public int? Editar { get; set; }
 
     [SupplyParameterFromForm(FormName = "partido")]
     protected PartidoFormulario? FormPartido { get; set; }
@@ -24,6 +22,12 @@ public class TorneoPartidosBase : TorneoPaginaBase
     protected List<LugarResumen> Lugares { get; private set; } = [];
 
     protected bool EnEdicion => FormPartido is { Id: > 0 };
+
+    /// <summary>Partidos agrupados por día (la base no guarda número de jornada).</summary>
+    protected IEnumerable<(string Titulo, List<PartidoResumen> Partidos)> Grupos => Partidos
+        .GroupBy(p => DateOnly.FromDateTime(p.Fecha))
+        .OrderBy(g => g.Key)
+        .Select(g => (Presentacion.EncabezadoDia(g.Key), g.OrderBy(p => p.Fecha).ThenBy(p => p.Id).ToList()));
 
     protected override async Task CargarAsync()
     {
@@ -89,7 +93,11 @@ public class TorneoPartidosBase : TorneoPaginaBase
 
     protected async Task EliminarAsync()
     {
-        if (Partidos.All(p => p.Id != EliminarIdPartido)) return;
+        if (Partidos.All(p => p.Id != EliminarIdPartido))
+        {
+            Error = "El registro ya no existe o ya fue eliminado. Recarga la página.";
+            return;
+        }
 
         if (await IntentarAsync(() => PartidoRepository.EliminarAsync(Id, EliminarIdPartido), "No se pudo eliminar el partido."))
         {

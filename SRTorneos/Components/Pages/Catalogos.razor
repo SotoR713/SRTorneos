@@ -1,5 +1,6 @@
 @page "/catalogos"
 @page "/catalogos/{Clave}"
+@attribute [Authorize]
 @using SRTorneos.Repositories
 @inherits CatalogosBase
 
@@ -25,14 +26,14 @@
             <header class="panel__header"><h2>@Definicion.Titulo <span class="count-pill">@Lista.Count</span></h2></header>
             <p class="panel__hint">@Definicion.Descripcion</p>
 
+            <form method="post" @formname="eliminar-catalogo" @onsubmit="EliminarAsync">
+            <AntiforgeryToken />
             @if (Lista.Count == 0)
             {
                 <p class="panel__empty">Todavía no hay registros. Agrega el primero con el formulario.</p>
             }
             else
             {
-                <form method="post" @formname="eliminar-catalogo" @onsubmit="EliminarAsync">
-                    <AntiforgeryToken />
                     <table class="data-table">
                         <thead><tr><th>@(Definicion.Numerico ? "Puesto" : "Nombre")</th><th class="num">En uso</th><th class="actions"></th></tr></thead>
                         <tbody>
@@ -53,8 +54,8 @@
                             }
                         </tbody>
                     </table>
-                </form>
             }
+            </form>
         </section>
 
         <section class="panel panel--form">

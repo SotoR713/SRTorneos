@@ -25,4 +25,7 @@ public static class ClasificadorDeporte
         if (nombre.StartsWith("ten")) return DeporteBase.Tenis;
         return DeporteBase.Otro;
     }
+
+    /// <summary>En básquetbol, voleibol, béisbol y tenis siempre hay un ganador.</summary>
+    public static bool PermiteEmpate(string? deporte) => Clasificar(deporte) is DeporteBase.Futbol or DeporteBase.FutbolAmericano or DeporteBase.Otro;
 }

@@ -1,0 +1,23 @@
+@page "/admin"
+@attribute [Authorize]
+@inherits PaginaBase
+
+<PageTitle>SRTorneos | Administración</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">ADMINISTRACIÓN</p><h1>Hola, @HttpContext?.User.Identity?.Name</h1><p>Catálogos y usuarios. Los torneos se administran desde cada torneo.</p></div>
+</section>
+
+<div class="menu-list">
+    <a class="menu-list__item" href="torneos/nuevo"><span class="menu-list__icon">＋</span><span><strong>Nuevo torneo</strong><small>Fechas, deporte, cupo y puntos por victoria</small></span><span class="menu-list__arrow">›</span></a>
+    <a class="menu-list__item" href="equipos"><span class="menu-list__icon">♟</span><span><strong>Equipos</strong><small>Catálogo general de equipos</small></span><span class="menu-list__arrow">›</span></a>
+    <a class="menu-list__item" href="jugadores"><span class="menu-list__icon">◐</span><span><strong>Jugadores</strong><small>Catálogo general de jugadores</small></span><span class="menu-list__arrow">›</span></a>
+    <a class="menu-list__item" href="lugares"><span class="menu-list__icon">◎</span><span><strong>Lugares</strong><small>Canchas y direcciones</small></span><span class="menu-list__arrow">›</span></a>
+    <a class="menu-list__item" href="catalogos"><span class="menu-list__icon">☰</span><span><strong>Otros catálogos</strong><small>Deportes, tipos de torneo, estados, puestos, faltas</small></span><span class="menu-list__arrow">›</span></a>
+    <a class="menu-list__item" href="usuarios"><span class="menu-list__icon">⚿</span><span><strong>Usuarios</strong><small>Quién puede capturar y editar</small></span><span class="menu-list__arrow">›</span></a>
+</div>
+
+<form method="post" action="logout" class="mt-4">
+    <AntiforgeryToken />
+    <button type="submit" class="btn btn-light w-100">Cerrar sesión</button>
+</form>

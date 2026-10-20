@@ -1,0 +1,38 @@
+@* Tarjeta de partido estilo app: equipos con escudo, marcador grande y estado. *@
+@{
+    var (estado, claseEstado) = Presentacion.EstadoPartido(Partido);
+}
+<a class="match-card @(Partido.Jugado ? "is-final" : null)" href="torneos/@Partido.IdTorneo/partidos/@Partido.Id">
+    <span class="match-card__meta">
+        @if (MostrarTorneo)
+        {
+            <span class="match-card__torneo">@Presentacion.IconoDeporte(Partido.Deporte) @Partido.Torneo</span>
+        }
+        else
+        {
+            <span class="match-card__torneo">@Presentacion.DiaRelativo(Partido.Fecha) · @Presentacion.Hora(Partido.Fecha)</span>
+        }
+        <span class="chip @claseEstado">@estado</span>
+    </span>
+    <span class="match-card__row @(Partido.GanoLocal ? "winner" : null) @(Partido.GanoVisitante ? "loser" : null)">
+        <Escudo Nombre="@Partido.Equipo1" Tamano="sm" />
+        <span class="match-card__team">@Partido.Equipo1</span>
+        <b class="match-card__score">@Partido.Puntos1</b>
+    </span>
+    <span class="match-card__row @(Partido.GanoVisitante ? "winner" : null) @(Partido.GanoLocal ? "loser" : null)">
+        <Escudo Nombre="@Partido.Equipo2" Tamano="sm" />
+        <span class="match-card__team">@Partido.Equipo2</span>
+        <b class="match-card__score">@Partido.Puntos2</b>
+    </span>
+    <span class="match-card__foot">
+        @if (MostrarTorneo) { <span>@Presentacion.DiaRelativo(Partido.Fecha) · @Presentacion.Hora(Partido.Fecha)</span> }
+        <span class="match-card__place">📍 @Partido.Lugar</span>
+    </span>
+</a>
+
+@code {
+    [Parameter, EditorRequired] public PartidoResumen Partido { get; set; } = default!;
+
+    /// <summary>En listas de varios torneos se muestra el nombre del torneo; dentro de un torneo, la fecha.</summary>
+    [Parameter] public bool MostrarTorneo { get; set; }
+}

@@ -12,7 +12,7 @@ else
     <TorneoEncabezado Torneo="Torneo" Seccion="equipos" />
     <Avisos Aviso="@Aviso" Error="@Error" />
 
-    @if (FaltanCatalogos)
+    @if (EsAdmin && FaltanCatalogos)
     {
         <div class="alert alert-warning" role="alert">
             Para inscribir equipos necesitas al menos un registro en
@@ -23,20 +23,20 @@ else
         </div>
     }
 
-    <div class="split-layout">
+    <div class="@(EsAdmin ? "split-layout" : null)">
         <section class="panel">
             <header class="panel__header">
                 <h2>Equipos inscritos <span class="count-pill">@(Torneo.EquiposMax is > 0 ? $"{Inscritos.Count} / {Torneo.EquiposMax}" : $"{Inscritos.Count}")</span></h2>
             </header>
 
+            <form method="post" @formname="quitar-equipo" @onsubmit="QuitarAsync">
+            <AntiforgeryToken />
             @if (Inscritos.Count == 0)
             {
-                <p class="panel__empty">Todavía no hay equipos inscritos. Usa el formulario para inscribir el primero.</p>
+                <p class="panel__empty">Todavía no hay equipos inscritos.@(EsAdmin ? " Usa el formulario para inscribir el primero." : "")</p>
             }
             else
             {
-                <form method="post" @formname="quitar-equipo" @onsubmit="QuitarAsync">
-                    <AntiforgeryToken />
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead><tr><th>Equipo</th><th class="num">Jugadores</th><th class="num">Partidos</th><th>Estado</th><th>Puesto</th><th class="actions"></th></tr></thead>
@@ -44,15 +44,15 @@ else
                                 @foreach (var equipo in Inscritos)
                                 {
                                     <tr class="@(equipo.IdEquipo == Editar ? "is-editing" : null)">
-                                        <td><a class="row-title" href="torneos/@Id/equipos/@equipo.IdEquipo">@equipo.Nombre</a></td>
+                                        <td><a class="player-cell" href="torneos/@Id/equipos/@equipo.IdEquipo"><Escudo Nombre="@equipo.Nombre" Tamano="xs" /><strong>@equipo.Nombre</strong></a></td>
                                         <td class="num">@equipo.Jugadores</td>
                                         <td class="num">@equipo.Partidos</td>
                                         <td><span class="badge-soft">@equipo.Estado</span></td>
                                         <td>@Presentacion.Puesto(equipo.Puesto)</td>
                                         <td class="actions">
                                             <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@equipo.IdEquipo">Plantilla</a>
-                                            <a class="btn btn-sm btn-light" href="torneos/@Id/equipos?editar=@equipo.IdEquipo">Editar</a>
-                                            @if (equipo.Partidos == 0)
+                                            @if (EsAdmin) { <a class="btn btn-sm btn-light" href="torneos/@Id/equipos?editar=@equipo.IdEquipo">Editar</a> }
+                                            @if (EsAdmin && equipo.Partidos == 0)
                                             {
                                                 <button class="btn btn-sm btn-outline-danger" type="submit" name="QuitarIdEquipo" value="@equipo.IdEquipo"
                                                         onclick="return confirm('¿Quitar este equipo del torneo? También se quitará su plantilla.');">Quitar</button>
@@ -63,22 +63,24 @@ else
                             </tbody>
                         </table>
                     </div>
-                </form>
             }
+            </form>
         </section>
 
+        @if (EsAdmin)
+        {
         <section class="panel panel--form">
             @if (FormInscripcion is not null)
             {
                 <header class="panel__header"><h2>@(EnEdicion ? $"Editar inscripción: {EquipoEnEdicion?.Nombre}" : "Inscribir equipo")</h2></header>
 
-                @if (!EnEdicion && Torneo.CupoLleno)
-                {
-                    <p class="panel__empty">El torneo alcanzó su cupo de @Torneo.EquiposMax equipos. Puedes ampliarlo en <a href="torneos/@Id/editar">Editar torneo</a>.</p>
-                }
-                else
-                {
-                    <EditForm Model="FormInscripcion" FormName="inscripcion" OnValidSubmit="GuardarAsync">
+                <EditForm Model="FormInscripcion" FormName="inscripcion" OnValidSubmit="GuardarAsync">
+                    @if (!EnEdicion && Torneo.CupoLleno)
+                    {
+                        <p class="panel__empty">El torneo alcanzó su cupo de @Torneo.EquiposMax equipos. Puedes ampliarlo en <a href="torneos/@Id/editar">Editar torneo</a>.</p>
+                    }
+                    else
+                    {
                         <DataAnnotationsValidator />
                         <input type="hidden" name="FormInscripcion.IdInscripcion" value="@FormInscripcion.IdInscripcion" />
 
@@ -123,9 +125,10 @@ else
                             @if (EnEdicion) { <a class="btn btn-light" href="torneos/@Id/equipos">Cancelar</a> }
                             <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Inscribir")</button>
                         </div>
-                    </EditForm>
-                }
+                    }
+                </EditForm>
             }
         </section>
+        }
     </div>
 }

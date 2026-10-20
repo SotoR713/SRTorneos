@@ -16,7 +16,6 @@ public class TorneoEditorBase : PaginaBase
     protected TorneoFormulario? Formulario { get; set; }
 
     protected List<Deporte> Deportes { get; private set; } = [];
-    protected List<UsuarioResumen> Usuarios { get; private set; } = [];
     protected List<TipoTorneo> TiposTorneo { get; private set; } = [];
 
     private TorneoResumen? _torneo;
@@ -24,14 +23,13 @@ public class TorneoEditorBase : PaginaBase
     protected bool EsEdicion => Id.HasValue;
     protected string Titulo => EsEdicion ? "Editar torneo" : "Crear torneo";
     protected string UrlRegreso => EsEdicion ? $"torneos/{Id}" : "torneos";
-    protected bool FaltanCatalogos => Deportes.Count == 0 || TiposTorneo.Count == 0 || Usuarios.Count == 0;
+    protected bool FaltanCatalogos => Deportes.Count == 0 || TiposTorneo.Count == 0;
 
     protected override async Task OnInitializedAsync()
     {
         bool cargado = await IntentarAsync(async () =>
         {
             Deportes = await CatalogoRepository.ObtenerDeportesAsync();
-            Usuarios = await CatalogoRepository.ObtenerUsuariosAsync();
             TiposTorneo = await CatalogoRepository.ObtenerTiposTorneoAsync();
 
             if (EsEdicion)
@@ -54,6 +52,9 @@ public class TorneoEditorBase : PaginaBase
 
         // En GET el formulario llega nulo: se crea vacío o con los datos actuales del torneo.
         Formulario ??= _torneo is null ? new TorneoFormulario() : TorneoFormulario.Desde(_torneo);
+
+        // El creador es quien tiene la sesión; al editar se conserva el creador original.
+        Formulario.IdUsuario = _torneo?.IdUsuario ?? IdUsuarioActual;
     }
 
     protected async Task GuardarAsync()
@@ -61,10 +62,9 @@ public class TorneoEditorBase : PaginaBase
         if (Formulario is null) return;
 
         if (Deportes.All(d => d.Id != Formulario.IdDeporte)
-            || TiposTorneo.All(t => t.Id != Formulario.IdTipoTorneo)
-            || Usuarios.All(u => u.Id != Formulario.IdUsuario))
+            || TiposTorneo.All(t => t.Id != Formulario.IdTipoTorneo))
         {
-            Error = "Selecciona un deporte, tipo de torneo y creador válidos.";
+            Error = "Selecciona un deporte y un tipo de torneo válidos.";
             return;
         }
 

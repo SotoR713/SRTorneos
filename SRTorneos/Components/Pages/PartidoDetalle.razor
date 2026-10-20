@@ -17,38 +17,86 @@ else
     }
     else
     {
-        <section class="sub-heading">
-            <a class="back-link" href="torneos/@Id/partidos">← Calendario</a>
-        </section>
+        <a class="back-link" href="torneos/@Id/partidos">← Calendario</a>
 
+        var (estado, claseEstado) = Presentacion.EstadoPartido(Partido);
         <section class="scoreboard">
-            <div class="scoreboard__team @(Partido.GanoLocal ? "winner" : null)">
-                <small>LOCAL</small><strong>@Partido.Equipo1</strong>
-            </div>
+            <a class="scoreboard__team @(Partido.GanoLocal ? "winner" : null)" href="torneos/@Id/equipos/@Partido.IdEquipo1">
+                <Escudo Nombre="@Partido.Equipo1" Tamano="lg" />
+                <strong>@Partido.Equipo1</strong><small>LOCAL</small>
+            </a>
             <div class="scoreboard__score">
+                <span class="chip @claseEstado">@estado</span>
                 @if (Partido.Jugado)
                 {
-                    <span>@Partido.Puntos1</span><em>–</em><span>@Partido.Puntos2</span>
+                    <div class="scoreboard__numbers"><span>@Partido.Puntos1</span><em>–</em><span>@Partido.Puntos2</span></div>
                 }
                 else
                 {
-                    <span class="pending">Pendiente</span>
+                    <div class="scoreboard__numbers scoreboard__numbers--time">@Presentacion.Hora(Partido.Fecha)</div>
                 }
-                <small>@Presentacion.FechaHora(Partido.Fecha) · @Partido.Lugar</small>
+                <small>@Presentacion.FechaHora(Partido.Fecha)</small>
             </div>
-            <div class="scoreboard__team @(Partido.GanoVisitante ? "winner" : null)">
-                <small>VISITANTE</small><strong>@Partido.Equipo2</strong>
-            </div>
+            <a class="scoreboard__team @(Partido.GanoVisitante ? "winner" : null)" href="torneos/@Id/equipos/@Partido.IdEquipo2">
+                <Escudo Nombre="@Partido.Equipo2" Tamano="lg" />
+                <strong>@Partido.Equipo2</strong><small>VISITANTE</small>
+            </a>
         </section>
+        <div class="action-row">
+            <a class="btn-pill" href="canchas/@Partido.IdLugar">📍 @Partido.Lugar</a>
+            <BotonCompartir Texto="@Presentacion.TextoPartido(Partido)" Ruta="@($"torneos/{Id}/partidos/{IdPartido}")" />
+            @if (!Partido.Jugado)
+            {
+                <a class="btn-pill" href="torneos/@Id/partidos/@IdPartido/calendario.ics" download data-enhance-nav="false">📅 Agregar al calendario</a>
+            }
+        </div>
 
         <Avisos Aviso="@Aviso" Error="@Error" />
 
         <section class="panel">
             <header class="panel__header">
-                <h2>Resultado</h2>
-                <a href="torneos/@Id/partidos?editar=@Partido.Id">Cambiar fecha, equipos o lugar →</a>
+                <h2>@(EsAdmin ? "Resultado" : "Estadísticas del partido")</h2>
+                @if (EsAdmin) { <a href="torneos/@Id/partidos?editar=@Partido.Id">Cambiar fecha, equipos o lugar →</a> }
             </header>
 
+            @if (!EsAdmin)
+            {
+                <div class="result-grid">
+                    @foreach (var (idEquipo, nombre, esLocal) in Lados)
+                    {
+                        <div class="result-team">
+                            <div class="result-team__head">
+                                <h3><Escudo Nombre="@nombre" Tamano="xs" /> @nombre</h3>
+                                <span class="score-readonly">@((esLocal ? Partido.Puntos1 : Partido.Puntos2)?.ToString() ?? "–")</span>
+                            </div>
+                            @if (JugadoresDe(idEquipo).Count == 0)
+                            {
+                                <p class="panel__empty">Sin jugadores registrados.</p>
+                            }
+                            else
+                            {
+                                <table class="data-table data-table--compact">
+                                    <thead><tr><th class="num">#</th><th>Jugador</th>@foreach (var tipo in TiposAnotacion) { <th class="num" title="@tipo.Nombre">@tipo.Abreviatura</th> }<th class="num">Pts</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var fila in FormResultado!.Anotaciones!.Where(f => JugadoresPorId.TryGetValue(f.IdJugador, out var j) && j.IdEquipo == idEquipo))
+                                        {
+                                            var jugador = JugadoresPorId[fila.IdJugador];
+                                            <tr>
+                                                <td class="num"><span class="jersey">@jugador.Numero</span></td>
+                                                <td><a class="row-title" href="torneos/@Id/jugadores/@jugador.IdJugador">@jugador.Nombre</a></td>
+                                                @for (int k = 0; k < TiposAnotacion.Count; k++) { <td class="num">@fila.Cantidad(k)</td> }
+                                                <td class="num"><strong>@fila.Puntos(TiposAnotacion)</strong></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
             @if (FormResultado is not null)
             {
                 <EditForm Model="FormResultado" FormName="resultado" OnValidSubmit="GuardarResultadoAsync">
@@ -86,11 +134,12 @@ else
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @for (int i = 0; i < FormResultado.Anotaciones.Count; i++)
+                                            @for (int i = 0; i < FormResultado.Anotaciones!.Count; i++)
                                             {
                                                 var indice = i;
-                                                var fila = FormResultado.Anotaciones[indice];
+                                                var fila = FormResultado.Anotaciones![indice];
                                                 if (!JugadoresPorId.TryGetValue(fila.IdJugador, out var jugador) || jugador.IdEquipo != idEquipo) continue;
+                                                fila.Cantidades ??= [];
                                                 while (fila.Cantidades.Count < TiposAnotacion.Count) { fila.Cantidades.Add(null); }
                                                 <tr>
                                                     <td class="num"><span class="jersey">@jugador.Numero</span></td>
@@ -98,7 +147,7 @@ else
                                                     @for (int k = 0; k < TiposAnotacion.Count; k++)
                                                     {
                                                         var columna = k;
-                                                        <td class="num"><input type="number" class="form-control form-control-sm count-input" name="@($"FormResultado.Anotaciones[{indice}].Cantidades[{columna}]")" value="@fila.Cantidades[columna]" min="0" max="99" aria-label="@($"{TiposAnotacion[columna].Nombre} de {jugador.Nombre}")" /></td>
+                                                        <td class="num"><input type="number" class="form-control form-control-sm count-input" name="@($"FormResultado.Anotaciones[{indice}].Cantidades[{columna}]")" value="@fila.Cantidades![columna]" min="0" max="99" aria-label="@($"{TiposAnotacion[columna].Nombre} de {jugador.Nombre}")" /></td>
                                                     }
                                                     <td class="num"><strong>@fila.Puntos(TiposAnotacion)</strong></td>
                                                 </tr>
@@ -130,26 +179,33 @@ else
                     </div>
                 </EditForm>
 
-                @if (Partido.Jugado)
-                {
-                    <form method="post" @formname="borrar-resultado" @onsubmit="BorrarResultadoAsync" class="text-end mt-2">
-                        <AntiforgeryToken />
+                <form method="post" @formname="borrar-resultado" @onsubmit="BorrarResultadoAsync" class="text-end mt-2">
+                    <AntiforgeryToken />
+                    @if (Partido.Jugado)
+                    {
                         <button class="btn btn-link text-danger" type="submit" onclick="return confirm('¿Borrar el resultado? El partido volverá a quedar pendiente.');">Borrar resultado</button>
-                    </form>
-                }
+                    }
+                </form>
+            }
             }
         </section>
 
         <section class="panel">
             <header class="panel__header"><h2>Faltas <span class="count-pill">@Faltas.Count</span></h2></header>
 
-            @if (TiposFalta.Count == 0)
-            {
-                <p class="panel__empty">Para registrar faltas agrega al menos un <a href="catalogos/tipos-falta">tipo de falta</a>.</p>
-            }
-            else if (JugadoresPorId.Count > 0 && FormFalta is not null)
+            @if (EsAdmin && FormFalta is not null)
             {
                 <EditForm Model="FormFalta" FormName="falta" OnValidSubmit="RegistrarFaltaAsync" class="inline-form inline-form--wrap">
+                @if (TiposFalta.Count == 0)
+                {
+                    <p class="panel__empty">Para registrar faltas agrega al menos un <a href="catalogos/tipos-falta">tipo de falta</a>.</p>
+                }
+                else if (JugadoresPorId.Count == 0)
+                {
+                    <p class="panel__empty">Agrega jugadores a las plantillas de los equipos para registrar faltas.</p>
+                }
+                else
+                {
                     <DataAnnotationsValidator />
                     <InputSelect class="form-select" @bind-Value="FormFalta.IdJugador" aria-label="Jugador">
                         <option value="0">Jugador…</option>
@@ -166,13 +222,14 @@ else
                     </InputSelect>
                     <button class="btn btn-accent" type="submit">Registrar falta</button>
                     <ValidationSummary class="validation-summary w-100" />
+                }
                 </EditForm>
             }
 
-            @if (Faltas.Count > 0)
-            {
-                <form method="post" @formname="eliminar-falta" @onsubmit="EliminarFaltaAsync">
-                    <AntiforgeryToken />
+            <form method="post" @formname="eliminar-falta" @onsubmit="EliminarFaltaAsync">
+                <AntiforgeryToken />
+                @if (Faltas.Count > 0)
+                {
                     <div class="table-responsive mt-3">
                     <table class="data-table data-table--compact">
                         <thead><tr><th class="num">#</th><th>Jugador</th><th>Equipo</th><th>Tipo</th><th class="actions"></th></tr></thead>
@@ -184,14 +241,14 @@ else
                                     <td>@falta.Jugador</td>
                                     <td>@falta.Equipo</td>
                                     <td><span class="badge-soft badge-soft--warn">@falta.TipoFalta</span></td>
-                                    <td class="actions"><button class="btn btn-sm btn-link text-danger" type="submit" name="EliminarIdFalta" value="@falta.Id">Quitar</button></td>
+                                    <td class="actions">@if (EsAdmin) { <button class="btn btn-sm btn-link text-danger" type="submit" name="EliminarIdFalta" value="@falta.Id" onclick="return confirm('¿Quitar esta falta?');">Quitar</button> }</td>
                                 </tr>
                             }
                         </tbody>
                     </table>
                     </div>
-                </form>
-            }
+                }
+            </form>
         </section>
     }
 }

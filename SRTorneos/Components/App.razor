@@ -3,7 +3,10 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#102a43" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SRTorneos" />
     <base href="/" />
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
@@ -17,6 +20,42 @@
 <body>
     <Routes />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script>
+        // Evita envíos dobles: desactiva el botón justo después de enviar (el navegador ya tomó su valor).
+        document.addEventListener('submit', function (e) {
+            var boton = e.submitter;
+            if (boton) setTimeout(function () { boton.disabled = true; }, 0);
+        });
+        // Si el usuario regresa con "Atrás", vuelve a habilitar los botones.
+        window.addEventListener('pageshow', function () {
+            document.querySelectorAll('button[type=submit][disabled]').forEach(function (b) { b.disabled = false; });
+        });
+
+        document.addEventListener('click', function (e) {
+            // Compartir: menú nativo del celular si existe; si no, el enlace abre WhatsApp.
+            var compartir = e.target.closest('[data-compartir]');
+            if (compartir && navigator.share) {
+                e.preventDefault();
+                navigator.share({ title: document.title, text: compartir.dataset.texto, url: compartir.dataset.url }).catch(function () { });
+                return;
+            }
+
+            // Seguir torneo: lista de ids en una cookie del navegador (no se guarda en la base de datos).
+            var seguir = e.target.closest('[data-seguir]');
+            if (seguir) {
+                var id = seguir.dataset.seguir;
+                var actual = (document.cookie.split('; ').find(function (c) { return c.indexOf('srt_sigo=') === 0; }) || 'srt_sigo=').substring(9);
+                var ids = actual.split('-').filter(function (x) { return x && x !== id; });
+                var activo = !seguir.classList.contains('is-on');
+                if (activo) ids.push(id);
+                document.cookie = 'srt_sigo=' + ids.slice(-100).join('-') + '; path=/; max-age=31536000; samesite=lax';
+                document.querySelectorAll('[data-seguir="' + id + '"]').forEach(function (b) {
+                    b.classList.toggle('is-on', activo);
+                    b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

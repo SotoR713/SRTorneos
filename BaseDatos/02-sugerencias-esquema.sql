@@ -30,11 +30,9 @@ GO
 -- ALTER TABLE Anotacion ADD CONSTRAINT CK_Anotacion_Puntos CHECK (Puntos IN (1, 2, 3));
 
 /* ---------------------------------------------------------------------------
-   3. NÚMERO DE JUGADOR: UQ_Jugadores_Numero hace que el número sea único en TODO el
-      sistema (solo un jugador puede tener el #4). En la práctica el número depende del
-      equipo y del torneo. Lo ideal es moverlo a Alineaciones:
+   3. NÚMERO DE JUGADOR: YA APLICADO (se quitó UQ_Jugadores_Numero; la app valida que el
+      número no se repita dentro del mismo equipo). Opcional a futuro: moverlo a Alineaciones:
 --------------------------------------------------------------------------- */
--- ALTER TABLE Jugadores DROP CONSTRAINT UQ_Jugadores_Numero;   -- (o DROP INDEX si es índice)
 -- ALTER TABLE Alineaciones ADD Numero INT NULL;
 -- CREATE UNIQUE INDEX UX_Alineaciones_Numero ON Alineaciones (IdTorneo, IdEquipo, Numero) WHERE Numero IS NOT NULL;
 -- (avísame si lo haces para cambiar la validación de la app a "único por equipo")
@@ -66,7 +64,7 @@ GO
    7. Diseño (para pensar con calma; implican cambios en la app):
    a) Inscripciones.IdPuesto es NOT NULL, pero el puesto final no se conoce al inscribir.
       Hoy se usa el Puesto 0 "Sin definir". Alternativa: ALTER COLUMN IdPuesto INT NULL.
-   b) ConfigTorn.IdTipoTorneo repite Torneos.IdTipoTorneo (la app mantiene ambos iguales).
+   b) El tipo de torneo vive solo en ConfigTorn.IdTipoTorneo (la app ya lo lee de ahí).
    c) Faltas.IdTorneo se puede obtener de Partidos.IdTorneo (dato repetido).
    d) Multideporte: ConfigTorn podría tener PuntosEmpate y PuntosDerrota.
    e) Partidos podría tener IdEstado (Programado, Jugado, Suspendido).

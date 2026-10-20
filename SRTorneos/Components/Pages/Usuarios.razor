@@ -1,0 +1,61 @@
+@page "/usuarios"
+@attribute [Authorize]
+@inherits UsuariosBase
+
+<PageTitle>SRTorneos | Usuarios</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">ADMINISTRACIÓN</p><h1>Usuarios</h1><p>Quienes pueden iniciar sesión para capturar y editar. El público consulta sin cuenta.</p></div>
+</section>
+
+<Avisos Aviso="@Aviso" Error="@Error" />
+
+<div class="split-layout">
+    <section class="panel">
+        <header class="panel__header"><h2>Usuarios <span class="count-pill">@Lista.Count</span></h2></header>
+        <form method="post" @formname="eliminar-usuario" @onsubmit="EliminarAsync">
+            <AntiforgeryToken />
+            <table class="data-table">
+                <thead><tr><th>Usuario</th><th class="num">Torneos creados</th><th class="actions"></th></tr></thead>
+                <tbody>
+                    @foreach (var usuario in Lista)
+                    {
+                        <tr class="@(usuario.Id == Editar ? "is-editing" : null)">
+                            <td class="row-title">@usuario.UserName @if (usuario.Id == IdUsuarioActual) { <span class="badge-soft">Tú</span> }</td>
+                            <td class="num">@usuario.Torneos</td>
+                            <td class="actions">
+                                <a class="btn btn-sm btn-light" href="usuarios?editar=@usuario.Id">Cambiar contraseña</a>
+                                @if (usuario.Id != IdUsuarioActual && usuario.Torneos == 0)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" type="submit" name="EliminarId" value="@usuario.Id"
+                                            onclick="return confirm('¿Eliminar este usuario?');">Eliminar</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
+    </section>
+
+    <section class="panel panel--form">
+        <header class="panel__header"><h2>@(EnEdicion ? $"Contraseña de {UsuarioEnEdicion?.UserName}" : "Nuevo usuario")</h2></header>
+        @if (FormUsuario is not null)
+        {
+            <EditForm Model="FormUsuario" FormName="usuario" OnValidSubmit="GuardarAsync">
+                <DataAnnotationsValidator />
+                <input type="hidden" name="FormUsuario.Id" value="@FormUsuario.Id" />
+                @if (!EnEdicion)
+                {
+                    <div class="form-field"><label for="nombreUsuario">Usuario</label><InputText id="nombreUsuario" class="form-control" @bind-Value="FormUsuario.UserName" maxlength="50" autocomplete="off" /><ValidationMessage For="@(() => FormUsuario.UserName)" /></div>
+                }
+                <div class="form-field"><label for="contrasena">Contraseña</label><InputText id="contrasena" type="password" class="form-control" @bind-Value="FormUsuario.Contrasena" autocomplete="new-password" /><small class="field-hint">Mínimo 8 caracteres.</small><ValidationMessage For="@(() => FormUsuario.Contrasena)" /></div>
+                <div class="form-field"><label for="confirmacion">Confirmar contraseña</label><InputText id="confirmacion" type="password" class="form-control" @bind-Value="FormUsuario.Confirmacion" autocomplete="new-password" /><ValidationMessage For="@(() => FormUsuario.Confirmacion)" /></div>
+                <div class="form-actions">
+                    @if (EnEdicion) { <a class="btn btn-light" href="usuarios">Cancelar</a> }
+                    <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar contraseña" : "Crear usuario")</button>
+                </div>
+            </EditForm>
+        }
+    </section>
+</div>

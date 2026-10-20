@@ -1,0 +1,9 @@
+@* Escudo del equipo: iniciales sobre un color fijo calculado con el nombre (la base no guarda logos ni colores). *@
+<span class="escudo escudo--@Tamano" style="--escudo: @Presentacion.ColorEquipo(Nombre)" aria-hidden="true">@Presentacion.Iniciales(Nombre)</span>
+
+@code {
+    [Parameter, EditorRequired] public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>xs, sm, md, lg o xl.</summary>
+    [Parameter] public string Tamano { get; set; } = "md";
+}

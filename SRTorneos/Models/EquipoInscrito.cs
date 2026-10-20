@@ -10,6 +10,7 @@ public class EquipoInscrito
     public string Estado { get; set; } = string.Empty;
     public int IdPuesto { get; set; }
     public int Puesto { get; set; }
+
     public int Jugadores { get; set; }
     public int Partidos { get; set; }
 }

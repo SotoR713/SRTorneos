@@ -4,11 +4,23 @@
     <nav class="nav flex-column">
         <div class="nav-label">MENÚ PRINCIPAL</div>
         <div class="nav-item px-3"><NavLink class="nav-link" href="" Match="NavLinkMatch.All"><span>⌂</span>Inicio</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="partidos"><span>▦</span>Partidos</NavLink></div>
         <div class="nav-item px-3"><NavLink class="nav-link" href="torneos"><span>◈</span>Torneos</NavLink></div>
-        <div class="nav-label">CATÁLOGOS</div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="equipos"><span>♟</span>Equipos</NavLink></div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="jugadores"><span>◐</span>Jugadores</NavLink></div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="lugares"><span>◎</span>Lugares</NavLink></div>
-        <div class="nav-item px-3"><NavLink class="nav-link" href="catalogos"><span>☰</span>Otros catálogos</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="canchas"><span>⌖</span>Canchas</NavLink></div>
+        @if (EsAdmin)
+        {
+            <div class="nav-label">CATÁLOGOS</div>
+            <div class="nav-item px-3"><NavLink class="nav-link" href="equipos"><span>♟</span>Equipos</NavLink></div>
+            <div class="nav-item px-3"><NavLink class="nav-link" href="jugadores"><span>◐</span>Jugadores</NavLink></div>
+            <div class="nav-item px-3"><NavLink class="nav-link" href="lugares"><span>◎</span>Lugares</NavLink></div>
+            <div class="nav-item px-3"><NavLink class="nav-link" href="catalogos"><span>☰</span>Otros catálogos</NavLink></div>
+            <div class="nav-label">ADMINISTRACIÓN</div>
+            <div class="nav-item px-3"><NavLink class="nav-link" href="usuarios"><span>⚿</span>Usuarios</NavLink></div>
+        }
     </nav>
 </div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+    private bool EsAdmin => HttpContext?.User.Identity?.IsAuthenticated == true;
+}

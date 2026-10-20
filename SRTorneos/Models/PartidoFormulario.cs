@@ -20,6 +20,11 @@ public class PartidoFormulario : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        if (Fecha.Year is < 2000 or > 2100)
+        {
+            yield return new ValidationResult("Captura una fecha válida para el partido.", [nameof(Fecha)]);
+        }
+
         if (IdEquipo1 > 0 && IdEquipo1 == IdEquipo2)
         {
             yield return new ValidationResult("Un equipo no puede jugar contra sí mismo.", [nameof(IdEquipo2)]);

@@ -1,0 +1,42 @@
+@page "/login"
+@inherits LoginBase
+
+<PageTitle>SRTorneos | Iniciar sesión</PageTitle>
+
+<section class="login-card">
+    @if (PrimerUso)
+    {
+        <p class="eyebrow text-accent">PRIMER USO</p>
+        <h1>Crea el administrador</h1>
+        <p class="text-muted">Todavía no hay usuarios. Este será el primero y podrá registrar a los demás. Por seguridad, solo se puede crear desde la computadora donde corre SRTorneos.</p>
+    }
+    else
+    {
+        <p class="eyebrow text-accent">ADMINISTRACIÓN</p>
+        <h1>Iniciar sesión</h1>
+        <p class="text-muted">El público puede consultar sin iniciar sesión. Entra solo para capturar o editar.</p>
+    }
+
+    <Avisos Error="@Error" />
+
+    <EditForm Model="FormLogin" FormName="login" OnValidSubmit="EntrarAsync">
+        @if (!PrimerUso)
+        {
+            <DataAnnotationsValidator />
+            <div class="form-field"><label for="usuario">Usuario</label><InputText id="usuario" class="form-control" @bind-Value="FormLogin!.UserName" autocomplete="username" /><ValidationMessage For="@(() => FormLogin!.UserName)" /></div>
+            <div class="form-field"><label for="contrasena">Contraseña</label><InputText id="contrasena" type="password" class="form-control" @bind-Value="FormLogin!.Contrasena" autocomplete="current-password" /><ValidationMessage For="@(() => FormLogin!.Contrasena)" /></div>
+            <button class="btn btn-accent" type="submit">Entrar</button>
+        }
+    </EditForm>
+
+    <EditForm Model="FormAdmin" FormName="primer-admin" OnValidSubmit="CrearAdministradorAsync">
+        @if (PrimerUso)
+        {
+            <DataAnnotationsValidator />
+            <div class="form-field"><label for="nuevoUsuario">Usuario</label><InputText id="nuevoUsuario" class="form-control" @bind-Value="FormAdmin!.UserName" maxlength="50" autocomplete="username" /><ValidationMessage For="@(() => FormAdmin!.UserName)" /></div>
+            <div class="form-field"><label for="nuevaContrasena">Contraseña</label><InputText id="nuevaContrasena" type="password" class="form-control" @bind-Value="FormAdmin!.Contrasena" autocomplete="new-password" /><small class="field-hint">Mínimo 8 caracteres.</small><ValidationMessage For="@(() => FormAdmin!.Contrasena)" /></div>
+            <div class="form-field"><label for="confirmacion">Confirmar contraseña</label><InputText id="confirmacion" type="password" class="form-control" @bind-Value="FormAdmin!.Confirmacion" autocomplete="new-password" /><ValidationMessage For="@(() => FormAdmin!.Confirmacion)" /></div>
+            <button class="btn btn-accent" type="submit">Crear administrador y entrar</button>
+        }
+    </EditForm>
+</section>

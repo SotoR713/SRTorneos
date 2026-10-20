@@ -1,16 +1,93 @@
 @page "/"
+@inherits HomeBase
+
 <PageTitle>SRTorneos | Inicio</PageTitle>
-<section class="hero-panel">
-    <div><p class="eyebrow">ADMINISTRACIÓN DE TORNEOS DEPORTIVOS</p><h1>Tu torneo, bajo control.</h1><p class="hero-copy">Organiza equipos, jugadores, partidos y resultados desde un solo lugar.</p><div class="hero-actions"><a class="btn btn-accent" href="torneos">Ver torneos</a><a class="btn btn-outline-light" href="torneos/nuevo">Crear torneo</a></div></div>
+
+<section class="hero-panel hero-panel--compact">
+    <div>
+        <p class="eyebrow">TORNEOS DEPORTIVOS</p>
+        <h1>@(EsAdmin ? "Tu torneo, bajo control." : "Sigue cada torneo en vivo.")</h1>
+        <p class="hero-copy">@(EsAdmin ? "Organiza equipos, jugadores, partidos y resultados desde un solo lugar." : "Calendario, resultados, tabla de posiciones y estadísticas, siempre actualizados.")</p>
+        <div class="hero-actions">
+            <a class="btn btn-accent" href="partidos">Ver partidos</a>
+            @if (EsAdmin) { <a class="btn btn-outline-light" href="torneos/nuevo">Crear torneo</a> }
+            else { <a class="btn btn-outline-light" href="torneos">Explorar torneos</a> }
+        </div>
+    </div>
     <div class="court-mark" aria-hidden="true">🏆</div>
 </section>
-<section class="mt-5">
-    <p class="eyebrow text-accent">CÓMO FUNCIONA</p>
-    <h2>De la inscripción a la tabla de posiciones</h2>
-    <div class="quick-grid quick-grid--4">
-        <a class="quick-card" href="torneos/nuevo"><span class="quick-icon">1</span><span><strong>Crea un torneo</strong><small>Deporte, fechas, cupo y puntos por victoria.</small></span></a>
-        <a class="quick-card" href="torneos"><span class="quick-icon">2</span><span><strong>Inscribe equipos y jugadores</strong><small>Arma la plantilla de cada equipo.</small></span></a>
-        <a class="quick-card" href="lugares"><span class="quick-icon">3</span><span><strong>Programa partidos</strong><small>Registra canchas y arma el calendario.</small></span></a>
-        <a class="quick-card" href="torneos"><span class="quick-icon">4</span><span><strong>Captura resultados</strong><small>Marcador, puntos por jugador y faltas.</small></span></a>
-    </div>
+
+<Avisos Error="@Error" />
+
+@if (Seguidos.Count > 0)
+{
+    <section class="feed-section">
+        <header class="feed-section__head"><h2>Siguiendo</h2><a href="torneos?ver=siguiendo">Ver todos</a></header>
+        <div class="h-scroll">
+            @foreach (var torneo in Seguidos)
+            {
+                <a class="mini-torneo" href="torneos/@torneo.Id">
+                    <span class="tournament-icon">@Presentacion.IconoDeporte(torneo.Deporte)</span>
+                    <span><strong>@torneo.Nombre</strong><small>@torneo.PartidosJugados/@torneo.Partidos jugados</small></span>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<section class="feed-section">
+    @if (Hoy.Count > 0)
+    {
+        <header class="feed-section__head"><h2>Hoy</h2><a href="partidos">Agenda completa</a></header>
+        <div class="match-grid">
+            @foreach (var partido in Hoy) { <TarjetaPartido Partido="partido" MostrarTorneo="true" /> }
+        </div>
+    }
+    else
+    {
+        <header class="feed-section__head"><h2>Próximos partidos</h2><a href="partidos">Agenda completa</a></header>
+        @if (Proximos.Count == 0)
+        {
+            <p class="panel__empty">No hay partidos programados.</p>
+        }
+        else
+        {
+            <div class="match-grid">
+                @foreach (var partido in Proximos) { <TarjetaPartido Partido="partido" MostrarTorneo="true" /> }
+            </div>
+        }
+    }
 </section>
+
+@if (Resultados.Count > 0)
+{
+    <section class="feed-section">
+        <header class="feed-section__head"><h2>Resultados recientes</h2><a href="partidos?ver=resultados">Ver más</a></header>
+        <div class="match-grid">
+            @foreach (var partido in Resultados) { <TarjetaPartido Partido="partido" MostrarTorneo="true" /> }
+        </div>
+    </section>
+}
+
+@if (Activos.Count > 0)
+{
+    <section class="feed-section">
+        <header class="feed-section__head"><h2>Torneos en curso y próximos</h2><a href="torneos">Explorar</a></header>
+        <div class="tournament-grid">
+            @foreach (var torneo in Activos) { <TarjetaTorneo Torneo="torneo" /> }
+        </div>
+    </section>
+}
+
+@if (EsAdmin)
+{
+    <section class="feed-section">
+        <header class="feed-section__head"><h2>De la inscripción al campeón</h2></header>
+        <div class="quick-grid quick-grid--4">
+            <a class="quick-card" href="torneos/nuevo"><span class="quick-icon">1</span><span><strong>Crea un torneo</strong><small>Deporte, fechas, cupo y puntos.</small></span></a>
+            <a class="quick-card" href="torneos"><span class="quick-icon">2</span><span><strong>Inscribe equipos y jugadores</strong><small>Arma la plantilla de cada equipo.</small></span></a>
+            <a class="quick-card" href="torneos"><span class="quick-icon">3</span><span><strong>Genera el calendario</strong><small>Automático y justo; luego lo ajustas.</small></span></a>
+            <a class="quick-card" href="partidos"><span class="quick-icon">4</span><span><strong>Captura resultados</strong><small>Tabla y estadísticas se actualizan solas.</small></span></a>
+        </div>
+    </section>
+}

@@ -1,0 +1,41 @@
+@page "/canchas"
+@inherits PaginaBase
+@inject SRTorneos.Repositories.ILugarRepository LugarRepository
+
+<PageTitle>SRTorneos | Canchas</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">SEDES</p><h1>Canchas</h1><p>Dónde se juega y qué partidos hay en cada lugar.</p></div>
+    @if (EsAdmin) { <a class="btn btn-light" href="lugares">Administrar lugares</a> }
+</section>
+
+<Avisos Error="@Error" />
+
+@if (Error is null && Lugares.Count == 0)
+{
+    <p class="panel__empty">Aún no hay canchas registradas.</p>
+}
+else
+{
+    <div class="venue-grid">
+        @foreach (var lugar in Lugares)
+        {
+            <article class="venue-card">
+                <span class="venue-card__icon" aria-hidden="true">📍</span>
+                <div class="venue-card__body">
+                    <h2><a class="stretched-link" href="canchas/@lugar.Id">@lugar.Nombre</a></h2>
+                    <p>@lugar.Direccion</p>
+                    <small>@lugar.Partidos @(lugar.Partidos == 1 ? "partido" : "partidos") en total</small>
+                </div>
+                <a class="btn-pill venue-card__map" href="@Presentacion.UrlMapa(lugar.Nombre, lugar.Direccion)" target="_blank" rel="noopener">Mapa</a>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    private List<LugarResumen> Lugares = [];
+
+    protected override Task OnInitializedAsync()
+        => IntentarAsync(async () => Lugares = await LugarRepository.ObtenerTodosAsync(), ErrorConexion);
+}

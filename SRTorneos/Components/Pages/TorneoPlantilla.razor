@@ -17,40 +17,83 @@ else
     }
     else
     {
-        <section class="sub-heading">
-            <a class="back-link" href="torneos/@Id/equipos">← Equipos inscritos</a>
-            <h2>@Equipo.Nombre <span class="count-pill">@Plantilla.Count jugadores</span></h2>
-            <p>@Equipo.Estado · Puesto @Presentacion.Puesto(Equipo.Puesto)</p>
+        <a class="back-link" href="torneos/@Id/equipos">← Equipos inscritos</a>
+
+        <section class="profile-hero" style="--escudo: @Presentacion.ColorEquipo(Equipo.Nombre)">
+            <Escudo Nombre="@Equipo.Nombre" Tamano="xl" />
+            <div class="profile-hero__info">
+                <p class="eyebrow">EQUIPO · @Equipo.Estado.ToUpperInvariant()</p>
+                <h1>@Equipo.Nombre</h1>
+                <p>@Plantilla.Count jugadores@(Equipo.Puesto > 0 ? $" · Puesto final {Presentacion.Puesto(Equipo.Puesto)}" : "")</p>
+            </div>
+            <div class="profile-hero__actions">
+                <BotonCompartir Texto="@($"{Equipo.Nombre} en {Torneo.Nombre}")" Ruta="@($"torneos/{Id}/equipos/{IdEquipo}")" />
+            </div>
+        </section>
+
+        <section class="stat-tiles">
+            <div class="stat-tile stat-tile--accent"><strong>@(Fila is { Jugados: > 0 } ? $"{Lugar}°" : "—")</strong><small>Lugar (@TotalEquipos)</small></div>
+            <div class="stat-tile"><strong>@(Fila?.Ganados ?? 0)–@(Fila?.Perdidos ?? 0)@(Fila is { Empatados: > 0 } f ? $"–{f.Empatados}" : "")</strong><small>@(Fila is { Empatados: > 0 } ? "G–P–E" : "Ganados–Perdidos")</small></div>
+            <div class="stat-tile"><strong>@(Fila?.Puntos ?? 0)</strong><small>Puntos en la tabla</small></div>
+            <div class="stat-tile"><strong>@(Fila is { Jugados: > 0 } ? Presentacion.Decimal((decimal)Fila.PuntosFavor / Fila.Jugados) : "—")</strong><small>Anota por partido</small></div>
+            <div class="stat-tile"><strong>@(Fila is { Jugados: > 0 } ? Presentacion.Decimal((decimal)Fila.PuntosContra / Fila.Jugados) : "—")</strong><small>Recibe por partido</small></div>
+            <div class="stat-tile">
+                <span class="streak">
+                    @foreach (var (letra, partido) in Racha)
+                    {
+                        <a class="result-badge @(letra == "G" ? "is-win" : letra == "P" ? "is-loss" : "is-draw")" href="torneos/@Id/partidos/@partido.Id" title="@Presentacion.TextoPartido(partido)">@letra</a>
+                    }
+                    @if (!Racha.Any()) { <strong>—</strong> }
+                </span>
+                <small>Últimos 5</small>
+            </div>
         </section>
 
         <Avisos Aviso="@Aviso" Error="@Error" />
 
-        <div class="split-layout">
+        @if (PorJugar.Count > 0 || Jugados.Count > 0)
+        {
+            <div class="panel-grid panel-grid--2">
+                <section class="feed-section">
+                    <header class="feed-section__head"><h2>Próximos partidos</h2></header>
+                    @if (PorJugar.Count == 0) { <p class="panel__empty">Sin partidos pendientes.</p> }
+                    <div class="match-grid match-grid--1">@foreach (var partido in PorJugar) { <TarjetaPartido Partido="partido" /> }</div>
+                </section>
+                <section class="feed-section">
+                    <header class="feed-section__head"><h2>Últimos resultados</h2></header>
+                    @if (Jugados.Count == 0) { <p class="panel__empty">Aún no juega.</p> }
+                    <div class="match-grid match-grid--1">@foreach (var partido in Enumerable.Reverse(Jugados).Take(3)) { <TarjetaPartido Partido="partido" /> }</div>
+                </section>
+            </div>
+        }
+
+        <div class="@(EsAdmin ? "split-layout" : null)">
             <section class="panel">
                 <header class="panel__header"><h2>Plantilla</h2></header>
+                <form method="post" @formname="quitar-jugador" @onsubmit="QuitarAsync">
+                <AntiforgeryToken />
                 @if (Plantilla.Count == 0)
                 {
-                    <p class="panel__empty">Este equipo aún no tiene jugadores. Agrega el primero con el formulario.</p>
+                    <p class="panel__empty">Este equipo aún no tiene jugadores.@(EsAdmin ? " Agrega el primero con el formulario." : "")</p>
                 }
                 else
                 {
-                    <form method="post" @formname="quitar-jugador" @onsubmit="QuitarAsync">
-                        <AntiforgeryToken />
                         <div class="table-responsive">
                             <table class="data-table">
-                                <thead><tr><th class="num">#</th><th>Jugador</th><th>Posición</th><th class="num">Puntos</th><th class="num">Faltas</th><th class="actions"></th></tr></thead>
+                                <thead><tr><th class="num">#</th><th>Jugador</th><th class="hide-sm">Posición</th><th class="num">PTS</th><th class="num">PROM</th><th class="num">FAL</th><th class="actions"></th></tr></thead>
                                 <tbody>
                                     @foreach (var jugador in Plantilla)
                                     {
                                         <tr class="@(jugador.IdJugador == Editar ? "is-editing" : null)">
                                             <td class="num"><span class="jersey">@jugador.Numero</span></td>
-                                            <td class="row-title">@jugador.Nombre</td>
-                                            <td>@jugador.Posicion</td>
-                                            <td class="num">@jugador.Puntos</td>
+                                            <td><a class="row-title" href="torneos/@Id/jugadores/@jugador.IdJugador">@jugador.Nombre</a></td>
+                                            <td class="hide-sm">@jugador.Posicion</td>
+                                            <td class="num"><strong>@jugador.Puntos</strong></td>
+                                            <td class="num">@Presentacion.Decimal(EstadisticaDe(jugador.IdJugador)?.Promedio ?? 0)</td>
                                             <td class="num">@jugador.Faltas</td>
                                             <td class="actions">
-                                                <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@IdEquipo?editar=@jugador.IdJugador">Editar</a>
-                                                @if (jugador.Puntos == 0 && jugador.Faltas == 0)
+                                                @if (EsAdmin) { <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@IdEquipo?editar=@jugador.IdJugador">Editar</a> }
+                                                @if (EsAdmin && jugador.Puntos == 0 && jugador.Faltas == 0)
                                                 {
                                                     <button class="btn btn-sm btn-outline-danger" type="submit" name="QuitarIdJugador" value="@jugador.IdJugador"
                                                             onclick="return confirm('¿Quitar a este jugador de la plantilla?');">Quitar</button>
@@ -61,10 +104,12 @@ else
                                 </tbody>
                             </table>
                         </div>
-                    </form>
                 }
+                </form>
             </section>
 
+            @if (EsAdmin)
+            {
             <div class="stack">
                 <section class="panel panel--form">
                     <header class="panel__header"><h2>@(EnEdicion ? "Editar jugador" : "Agregar jugador nuevo")</h2></header>
@@ -77,7 +122,7 @@ else
                                 <div class="form-field"><label for="numero">Número</label><InputNumber id="numero" class="form-control" @bind-Value="FormJugador.Numero" min="0" max="999" /><ValidationMessage For="@(() => FormJugador.Numero)" /></div>
                                 <div class="form-field"><label for="nombreJugador">Nombre</label><InputText id="nombreJugador" class="form-control" @bind-Value="FormJugador.Nombre" maxlength="50" /><ValidationMessage For="@(() => FormJugador.Nombre)" /></div>
                             </div>
-                            <small class="field-hint mb-3">El número de jugador no se puede repetir en todo el sistema.</small>
+                            <small class="field-hint mb-3">El número no se puede repetir dentro del equipo.</small>
                             <div class="form-field">
                                 <label for="posicion">Posición</label>
                                 <InputText id="posicion" class="form-control" @bind-Value="FormJugador.Posicion" maxlength="20" list="posiciones-sugeridas" />
@@ -92,13 +137,13 @@ else
                     }
                 </section>
 
-                @if (!EnEdicion && Disponibles.Count > 0)
-                {
+                <form method="post" @formname="alinear-existente" @onsubmit="AlinearExistenteAsync">
+                    <AntiforgeryToken />
+                    @if (!EnEdicion && Disponibles.Count > 0)
+                    {
                     <section class="panel panel--form">
                         <header class="panel__header"><h2>Agregar jugador existente</h2></header>
                         <p class="panel__hint">Jugadores registrados que no están en ningún equipo de este torneo.</p>
-                        <form method="post" @formname="alinear-existente" @onsubmit="AlinearExistenteAsync">
-                            <AntiforgeryToken />
                             <div class="inline-form">
                                 <select class="form-select" name="AlinearIdJugador" aria-label="Jugador existente">
                                     <option value="0">— Selecciona —</option>
@@ -106,10 +151,11 @@ else
                                 </select>
                                 <button class="btn btn-accent" type="submit">Agregar</button>
                             </div>
-                        </form>
                     </section>
-                }
+                    }
+                </form>
             </div>
+            }
         </div>
     }
 }

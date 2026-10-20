@@ -1,0 +1,22 @@
+@* Tarjeta de torneo para la portada y el explorador. *@
+<article class="tournament-card">
+    <div class="tournament-card__top">
+        <span class="tournament-icon">@Presentacion.IconoDeporte(Torneo.Deporte)</span>
+        <span class="badge-estado @Presentacion.ClaseEstado(Torneo.Estado)">@Presentacion.EtiquetaEstado(Torneo.Estado)</span>
+    </div>
+    <h2><a class="stretched-link" href="torneos/@Torneo.Id">@Torneo.Nombre</a></h2>
+    <p class="tournament-meta">@Torneo.Deporte · @Torneo.TipoTorneo</p>
+    <p class="tournament-dates">@Presentacion.Fecha(Torneo.FechaInicio) — @Presentacion.Fecha(Torneo.FechaFin)</p>
+    @if (Torneo.Partidos > 0)
+    {
+        <div class="progress-line" title="@Torneo.PartidosJugados de @Torneo.Partidos partidos jugados">
+            <span style="width: @(Torneo.PartidosJugados * 100 / Torneo.Partidos)%"></span>
+        </div>
+    }
+    <p class="tournament-stats"><span>@Torneo.Equipos equipos</span><span>@Torneo.PartidosJugados/@Torneo.Partidos partidos</span></p>
+    <div class="tournament-card__actions"><BotonSeguir IdTorneo="Torneo.Id" /></div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public TorneoResumen Torneo { get; set; } = default!;
+}

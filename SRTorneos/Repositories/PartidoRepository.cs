@@ -8,7 +8,7 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
     : RepositorioBase(connectionFactory), IPartidoRepository
 {
     private const string ConsultaPartidos = """
-        SELECT p.Id, p.IdTorneo, p.Fecha,
+        SELECT p.Id, p.IdTorneo, t.Nombre AS Torneo, d.Nombre AS Deporte, p.Fecha,
                p.IdEquipo1, e1.Nombre AS Equipo1,
                p.IdEquipo2, e2.Nombre AS Equipo2,
                p.IdLugar, l.Nombre AS Lugar,
@@ -18,18 +18,53 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
                  WHERE s.IdPartido = p.Id AND s.IdEquipo = p.IdEquipo2 ORDER BY s.Id DESC) AS Puntos2,
                (SELECT COUNT(*) FROM Faltas f WHERE f.IdPartido = p.Id) AS Faltas
         FROM Partidos p
+        INNER JOIN Torneos t ON t.Id = p.IdTorneo
+        INNER JOIN Deportes d ON d.Id = t.IdDeporte
         INNER JOIN Equipos e1 ON e1.Id = p.IdEquipo1
         INNER JOIN Equipos e2 ON e2.Id = p.IdEquipo2
         INNER JOIN Lugares l ON l.Id = p.IdLugar
-        WHERE p.IdTorneo = @idTorneo
         """;
 
     public Task<List<PartidoResumen>> ObtenerPorTorneoAsync(int idTorneo, CancellationToken cancellationToken = default)
-        => ConsultarAsync($"{ConsultaPartidos} ORDER BY p.Fecha, p.Id;", MapearPartido,
+        => ConsultarAsync($"{ConsultaPartidos} WHERE p.IdTorneo = @idTorneo ORDER BY p.Fecha, p.Id;", MapearPartido,
             p => p.Entero("@idTorneo", idTorneo), cancellationToken);
 
+    public Task<List<PartidoResumen>> ObtenerAgendaAsync(FiltroAgenda filtro, CancellationToken cancellationToken = default)
+    {
+        var condiciones = new List<string> { "p.Fecha >= @desde", "p.Fecha < @hasta" };
+        if (filtro.IdLugar is not null) condiciones.Add("p.IdLugar = @idLugar");
+        if (filtro.Jugados is bool jugados)
+        {
+            condiciones.Add($"{(jugados ? "" : "NOT ")}EXISTS (SELECT 1 FROM Puntajes s WHERE s.IdPartido = p.Id)");
+        }
+
+        var torneos = filtro.Torneos?.Distinct().Take(200).ToList();
+        if (torneos is not null)
+        {
+            if (torneos.Count == 0) return Task.FromResult(new List<PartidoResumen>());
+            condiciones.Add($"p.IdTorneo IN ({string.Join(", ", torneos.Select((_, i) => $"@t{i}"))})");
+        }
+
+        string sql = $"""
+            SELECT TOP (@maximo) * FROM (
+            {ConsultaPartidos}
+            WHERE {string.Join(" AND ", condiciones)}
+            ) x
+            ORDER BY x.Fecha {(filtro.Descendente ? "DESC" : "ASC")}, x.Id;
+            """;
+
+        return ConsultarAsync(sql, MapearPartido, p =>
+        {
+            p.Entero("@maximo", Math.Clamp(filtro.Maximo, 1, 500));
+            p.FechaHora("@desde", filtro.Desde);
+            p.FechaHora("@hasta", filtro.Hasta);
+            if (filtro.IdLugar is int idLugar) p.Entero("@idLugar", idLugar);
+            if (torneos is not null) for (int i = 0; i < torneos.Count; i++) p.Entero($"@t{i}", torneos[i]);
+        }, cancellationToken);
+    }
+
     public Task<PartidoResumen?> ObtenerAsync(int idTorneo, int idPartido, CancellationToken cancellationToken = default)
-        => ConsultarUnoAsync($"{ConsultaPartidos} AND p.Id = @idPartido;", MapearPartido, p =>
+        => ConsultarUnoAsync($"{ConsultaPartidos} WHERE p.IdTorneo = @idTorneo AND p.Id = @idPartido;", MapearPartido, p =>
         {
             p.Entero("@idTorneo", idTorneo);
             p.Entero("@idPartido", idPartido);
@@ -128,6 +163,40 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
             """,
             l => new CanastasJugador(l.Entero("IdJugador"), l.Entero("Puntos"), l.Entero("Cantidad")),
             p => p.Entero("@idPartido", idPartido), cancellationToken);
+
+    public Task<int> CrearVariosAsync(int idTorneo, IReadOnlyList<Partido> partidos, bool reemplazarSinResultado, CancellationToken cancellationToken = default)
+        => EnTransaccionAsync(async (conexion, transaccion) =>
+        {
+            if (reemplazarSinResultado)
+            {
+                await EjecutarAsync(conexion, transaccion, SqlBorrarPartidosSinResultado,
+                    p => p.Entero("@idTorneo", idTorneo), cancellationToken);
+            }
+
+            foreach (var partido in partidos)
+            {
+                await EjecutarAsync(conexion, transaccion, SqlInsertarPartido, p => ParametrosPartido(p, partido), cancellationToken);
+            }
+
+            return partidos.Count;
+        }, cancellationToken);
+
+    private const string SqlInsertarPartido = """
+        INSERT INTO Partidos (Fecha, IdEquipo1, IdEquipo2, IdLugar, IdTorneo)
+        VALUES (@fecha, @idEquipo1, @idEquipo2, @idLugar, @idTorneo);
+        """;
+
+    /// <summary>Borra (con sus faltas y anotaciones) los partidos sin resultado del torneo.</summary>
+    private const string SqlBorrarPartidosSinResultado = """
+        DECLARE @borrar TABLE (Id INT PRIMARY KEY);
+        INSERT INTO @borrar (Id)
+        SELECT p.Id FROM Partidos p
+        WHERE p.IdTorneo = @idTorneo
+          AND NOT EXISTS (SELECT 1 FROM Puntajes s WHERE s.IdPartido = p.Id);
+        DELETE FROM Anotacion WHERE IdPartido IN (SELECT Id FROM @borrar);
+        DELETE FROM Faltas WHERE IdPartido IN (SELECT Id FROM @borrar);
+        DELETE FROM Partidos WHERE Id IN (SELECT Id FROM @borrar);
+        """;
 
     public Task<List<FaltaRegistrada>> ObtenerFaltasAsync(int idPartido, CancellationToken cancellationToken = default)
         => ConsultarAsync("""
@@ -240,6 +309,8 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
     {
         Id = l.Entero("Id"),
         IdTorneo = l.Entero("IdTorneo"),
+        Torneo = l.Texto("Torneo"),
+        Deporte = l.Texto("Deporte"),
         Fecha = l.FechaHora("Fecha"),
         IdEquipo1 = l.Entero("IdEquipo1"),
         Equipo1 = l.Texto("Equipo1"),

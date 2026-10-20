@@ -12,72 +12,70 @@ else
     <TorneoEncabezado Torneo="Torneo" Seccion="partidos" />
     <Avisos Aviso="@Aviso" Error="@Error" />
 
-    <div class="split-layout">
+    @if (EsAdmin)
+    {
+        <div class="toolbar">
+            <a class="btn btn-accent" href="torneos/@Id/partidos/generar">⚙ Generar calendario automático</a>
+        </div>
+    }
+
+    <div class="@(EsAdmin ? "split-layout" : null)">
         <section class="panel">
             <header class="panel__header">
                 <h2>Calendario <span class="count-pill">@Partidos.Count(p => p.Jugado)/@Partidos.Count jugados</span></h2>
             </header>
 
+            <form method="post" @formname="eliminar-partido" @onsubmit="EliminarAsync">
+            <AntiforgeryToken />
             @if (Partidos.Count == 0)
             {
                 <p class="panel__empty">No hay partidos programados.</p>
             }
             else
             {
-                <form method="post" @formname="eliminar-partido" @onsubmit="EliminarAsync">
-                    <AntiforgeryToken />
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead><tr><th>Fecha</th><th>Partido</th><th>Lugar</th><th class="actions"></th></tr></thead>
-                            <tbody>
-                                @foreach (var partido in Partidos)
+                @foreach (var grupo in Grupos)
+                {
+                    <h3 class="day-group__title">@grupo.Titulo</h3>
+                    <div class="match-grid @(EsAdmin ? "match-grid--admin" : null)">
+                        @foreach (var partido in grupo.Partidos)
+                        {
+                            <div class="match-slot @(partido.Id == Editar ? "is-editing" : null)">
+                                <TarjetaPartido Partido="partido" />
+                                @if (EsAdmin)
                                 {
-                                    <tr class="@(partido.Id == Editar ? "is-editing" : null)">
-                                        <td class="nowrap">@Presentacion.FechaCorta(partido.Fecha)<small class="d-block text-muted">@Presentacion.Hora(partido.Fecha)</small></td>
-                                        <td>
-                                            <a class="scoreline" href="torneos/@Id/partidos/@partido.Id">
-                                                <span class="@(partido.GanoLocal ? "winner" : null)">@partido.Equipo1</span>
-                                                @if (partido.Jugado)
-                                                {
-                                                    <b class="score">@partido.Puntos1 – @partido.Puntos2</b>
-                                                }
-                                                else
-                                                {
-                                                    <b class="score score--pending">vs</b>
-                                                }
-                                                <span class="@(partido.GanoVisitante ? "winner" : null)">@partido.Equipo2</span>
-                                            </a>
-                                        </td>
-                                        <td>@partido.Lugar</td>
-                                        <td class="actions">
-                                            <a class="btn btn-sm @(partido.Jugado ? "btn-light" : "btn-accent")" href="torneos/@Id/partidos/@partido.Id">@(partido.Jugado ? "Ver" : "Resultado")</a>
-                                            <a class="btn btn-sm btn-light" href="torneos/@Id/partidos?editar=@partido.Id">Editar</a>
-                                            <button class="btn btn-sm btn-outline-danger" type="submit" name="EliminarIdPartido" value="@partido.Id"
-                                                    onclick="return confirm('¿Eliminar este partido? Se borrarán también su resultado, anotaciones y faltas.');">Eliminar</button>
-                                        </td>
-                                    </tr>
+                                    <div class="match-slot__actions">
+                                        <a class="btn btn-sm @(partido.Jugado ? "btn-light" : "btn-accent")" href="torneos/@Id/partidos/@partido.Id">@(partido.Jugado ? "Ver" : "Resultado")</a>
+                                        <a class="btn btn-sm btn-light" href="torneos/@Id/partidos?editar=@partido.Id">Editar</a>
+                                        <button class="btn btn-sm btn-outline-danger" type="submit" name="EliminarIdPartido" value="@partido.Id"
+                                                onclick="return confirm('¿Eliminar este partido? Se borrarán también su resultado, anotaciones y faltas.');">Eliminar</button>
+                                    </div>
                                 }
-                            </tbody>
-                        </table>
+                            </div>
+                        }
                     </div>
-                </form>
+                }
             }
+            </form>
         </section>
 
+        @if (EsAdmin)
+        {
         <section class="panel panel--form">
             <header class="panel__header"><h2>@(EnEdicion ? "Editar partido" : "Programar partido")</h2></header>
 
-            @if (Equipos.Count < 2)
-            {
-                <p class="panel__empty">Inscribe al menos dos equipos para programar partidos. <a href="torneos/@Id/equipos">Ir a equipos →</a></p>
-            }
-            else if (Lugares.Count == 0)
-            {
-                <p class="panel__empty">Registra al menos un lugar (cancha) para programar partidos. <a href="lugares">Ir a lugares →</a></p>
-            }
-            else if (FormPartido is not null)
+            @if (FormPartido is not null)
             {
                 <EditForm Model="FormPartido" FormName="partido" OnValidSubmit="GuardarAsync">
+                @if (Equipos.Count < 2)
+                {
+                    <p class="panel__empty">Inscribe al menos dos equipos para programar partidos. <a href="torneos/@Id/equipos">Ir a equipos →</a></p>
+                }
+                else if (Lugares.Count == 0)
+                {
+                    <p class="panel__empty">Registra al menos un lugar (cancha) para programar partidos. <a href="lugares">Ir a lugares →</a></p>
+                }
+                else
+                {
                     <DataAnnotationsValidator />
                     <input type="hidden" name="FormPartido.Id" value="@FormPartido.Id" />
 
@@ -87,6 +85,7 @@ else
                                    min="@($"{Torneo.FechaInicio:yyyy-MM-dd}T00:00")" max="@($"{Torneo.FechaFin:yyyy-MM-dd}T23:59")" />
                         <ValidationMessage For="@(() => FormPartido.Fecha)" />
                     </div>
+
                     <div class="form-field">
                         <label for="local">Equipo local</label>
                         <InputSelect id="local" class="form-select" @bind-Value="FormPartido.IdEquipo1">
@@ -116,8 +115,10 @@ else
                         @if (EnEdicion) { <a class="btn btn-light" href="torneos/@Id/partidos">Cancelar</a> }
                         <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Programar")</button>
                     </div>
+                }
                 </EditForm>
             }
         </section>
+        }
     </div>
 }

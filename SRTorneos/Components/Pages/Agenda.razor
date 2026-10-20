@@ -1,0 +1,43 @@
+@page "/partidos"
+@inherits AgendaBase
+
+<PageTitle>SRTorneos | Partidos</PageTitle>
+
+<section class="page-heading">
+    <div><p class="eyebrow text-accent">AGENDA</p><h1>Partidos</h1><p>Todos los torneos en un solo lugar.</p></div>
+</section>
+
+<nav class="segmented" aria-label="Qué partidos ver">
+    <a class="@(!VerResultados ? "is-on" : null)" href="@Url(false, FiltrarSiguiendo)">Próximos</a>
+    <a class="@(VerResultados ? "is-on" : null)" href="@Url(true, FiltrarSiguiendo)">Resultados</a>
+</nav>
+<nav class="filter-chips" aria-label="Filtrar">
+    <a class="chip-filter @(!FiltrarSiguiendo ? "is-on" : null)" href="@Url(VerResultados, false)">Todos los torneos</a>
+    <a class="chip-filter @(FiltrarSiguiendo ? "is-on" : null)" href="@Url(VerResultados, true)">★ Los que sigo</a>
+</nav>
+
+<Avisos Error="@Error" />
+
+@if (Error is null && Partidos.Count == 0)
+{
+    <p class="panel__empty">
+        @if (FiltrarSiguiendo && Sigo.Count == 0)
+        {
+            <span>Aún no sigues ningún torneo. Entra a un <a href="torneos">torneo</a> y toca ☆ Seguir.</span>
+        }
+        else
+        {
+            @(VerResultados ? "Todavía no hay resultados." : "No hay partidos programados.")
+        }
+    </p>
+}
+
+@foreach (var dia in PorDia)
+{
+    <section class="day-group">
+        <h2 class="day-group__title">@Presentacion.EncabezadoDia(dia.Key)</h2>
+        <div class="match-grid">
+            @foreach (var partido in dia) { <TarjetaPartido Partido="partido" MostrarTorneo="true" /> }
+        </div>
+    </section>
+}

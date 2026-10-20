@@ -1,0 +1,1 @@
+-- Archivo obsoleto (v8): la app ya no necesita cambios en la base de datos. Puedes borrarlo.

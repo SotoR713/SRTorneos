@@ -54,7 +54,7 @@ public class PartidoDetalleBase : TorneoPaginaBase
 
         var plantilla = (await JugadorRepository.ObtenerPlantillaAsync(Id, Partido.IdEquipo1))
             .Concat(await JugadorRepository.ObtenerPlantillaAsync(Id, Partido.IdEquipo2));
-        JugadoresPorId = plantilla.ToDictionary(j => j.IdJugador);
+        JugadoresPorId = plantilla.GroupBy(j => j.IdJugador).ToDictionary(g => g.Key, g => g.First());
 
         TiposAnotacion = ReglasAnotacion.Permitidos(Torneo!.Deporte);
         TiposSinRegistro = ReglasAnotacion.NoPermitidos(Torneo.Deporte);
@@ -63,7 +63,13 @@ public class PartidoDetalleBase : TorneoPaginaBase
         TiposFalta = await CatalogoRepository.ObtenerTiposFaltaAsync();
         FormFalta ??= new FaltaFormulario();
 
-        if (FormResultado is null)
+        if (FormResultado is not null)
+        {
+            // En un POST las listas que no venían en el formulario llegan nulas.
+            FormResultado.Anotaciones ??= [];
+            foreach (var fila in FormResultado.Anotaciones) fila.Cantidades ??= [];
+        }
+        else
         {
             var anotaciones = await PartidoRepository.ObtenerAnotacionesAsync(IdPartido);
             FormResultado = new ResultadoFormulario
@@ -87,8 +93,14 @@ public class PartidoDetalleBase : TorneoPaginaBase
     {
         if (Partido is null || FormResultado is null) return;
 
-        var filas = FormResultado.Anotaciones;
-        if (filas.Any(f => f.Cantidades.Count > TiposAnotacion.Count || f.Cantidades.Any(c => c is < 0 or > 99)))
+        if (FormResultado.Puntos1 == FormResultado.Puntos2 && !ClasificadorDeporte.PermiteEmpate(Torneo?.Deporte))
+        {
+            Error = $"En {Torneo?.Deporte} no hay empates. Revisa el marcador (los tiempos extra cuentan en el resultado final).";
+            return;
+        }
+
+        var filas = FormResultado.Anotaciones ?? [];
+        if (filas.Any(f => f.Cantidades is { } c && (c.Count > TiposAnotacion.Count || c.Any(x => x is < 0 or > 99))))
         {
             Error = "Las anotaciones por jugador deben estar entre 0 y 99.";
             return;
@@ -114,7 +126,7 @@ public class PartidoDetalleBase : TorneoPaginaBase
         }
 
         var anotaciones = capturadas
-            .SelectMany(f => TiposAnotacion.Select((t, i) => new CanastasJugador(f.IdJugador, t.Valor, i < f.Cantidades.Count ? f.Cantidades[i] ?? 0 : 0)))
+            .SelectMany(f => TiposAnotacion.Select((t, i) => new CanastasJugador(f.IdJugador, t.Valor, f.Cantidad(i))))
             .Where(c => c.Cantidad > 0)
             .ToList();
 
@@ -128,6 +140,8 @@ public class PartidoDetalleBase : TorneoPaginaBase
 
     protected async Task BorrarResultadoAsync()
     {
+        if (Partido is null) return;
+
         if (await IntentarAsync(() => PartidoRepository.BorrarResultadoAsync(IdPartido), "No se pudo borrar el resultado."))
         {
             IrA(UrlPartido, "resultado-borrado");
@@ -153,9 +167,11 @@ public class PartidoDetalleBase : TorneoPaginaBase
 
     protected async Task EliminarFaltaAsync()
     {
-        if (await IntentarAsync(() => PartidoRepository.EliminarFaltaAsync(IdPartido, EliminarIdFalta), "No se pudo eliminar la falta."))
+        bool eliminada = false;
+        if (await IntentarAsync(async () => eliminada = await PartidoRepository.EliminarFaltaAsync(IdPartido, EliminarIdFalta), "No se pudo eliminar la falta."))
         {
-            IrA(UrlPartido, "falta-eliminada");
+            if (eliminada) IrA(UrlPartido, "falta-eliminada");
+            else Error = "La falta ya no existe o ya fue eliminada. Recarga la página.";
         }
     }
 }

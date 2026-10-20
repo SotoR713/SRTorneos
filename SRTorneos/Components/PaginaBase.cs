@@ -22,6 +22,12 @@ public abstract class PaginaBase : ComponentBase
     [SupplyParameterFromQuery(Name = "aviso")]
     public string? ClaveAviso { get; set; }
 
+    /// <summary>?editar=Id en las páginas de catálogo. Se recibe como texto para que un valor inválido no tumbe la página.</summary>
+    [SupplyParameterFromQuery(Name = "editar")]
+    public string? EditarTexto { get; set; }
+
+    protected int? Editar => int.TryParse(EditarTexto, out int id) ? id : null;
+
     /// <summary>El aviso de éxito solo se muestra al llegar por GET (después de la redirección).</summary>
     protected string? Aviso =>
         Error is null && !HttpMethods.IsPost(HttpContext?.Request.Method ?? string.Empty)
@@ -29,6 +35,11 @@ public abstract class PaginaBase : ComponentBase
             : null;
 
     protected string? Error { get; set; }
+
+    /// <summary>Hay sesión iniciada: puede capturar y editar. Sin sesión, solo consulta.</summary>
+    protected bool EsAdmin => HttpContext?.User.Identity?.IsAuthenticated == true;
+
+    protected int IdUsuarioActual => int.TryParse(HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out int id) ? id : 0;
 
     /// <summary>
     /// Ejecuta una operación de base de datos; si falla, registra el error y deja un mensaje amigable.
@@ -48,12 +59,15 @@ public abstract class PaginaBase : ComponentBase
                 _ when ex.EsLlaveForanea() && mensajeRelacionados is not null => mensajeRelacionados,
                 _ when ex.EsDuplicado() => $"{mensajeError} Ya existe un registro con ese valor y la base no permite repetirlo.",
                 _ when ex.EsRestriccionCheck() => $"{mensajeError} La base de datos rechazó un valor por una de sus reglas (restricción CHECK).",
+                // 207 = columna inexistente, 208 = tabla inexistente: la base está desactualizada, no caída.
+                _ when ex.Number is 207 or 208 => "La base de datos no tiene una tabla o columna que la aplicación necesita.",
                 _ => mensajeError
             };
             Error = mensaje + Detalle(ex);
             return false;
         }
-        catch (Exception ex) when (ex is InvalidOperationException or InvalidCastException or FormatException or IndexOutOfRangeException)
+        catch (Exception ex) when (ex is InvalidOperationException or InvalidCastException or FormatException
+                                       or IndexOutOfRangeException or OverflowException or System.Data.SqlTypes.SqlTypeException)
         {
             // Errores típicos de ADO.NET (conexión, columnas o tipos que no coinciden con la base).
             Logger.LogError(ex, "Error al acceder a datos: {Mensaje}", mensajeError);
@@ -62,13 +76,13 @@ public abstract class PaginaBase : ComponentBase
         }
     }
 
-    /// <summary>En desarrollo agrega el mensaje técnico para diagnosticar; en producción no se muestra.</summary>
+    /// <summary>En desarrollo, y solo a usuarios con sesión, agrega el mensaje técnico para diagnosticar.</summary>
     private string Detalle(Exception ex)
-        => Entorno.IsDevelopment()
+        => Entorno.IsDevelopment() && EsAdmin
             ? $" Detalle técnico: {(ex is SqlException sql ? $"[SQL {sql.Number}] " : $"[{ex.GetType().Name}] ")}{ex.Message}"
             : string.Empty;
 
     /// <summary>Patrón POST-Redirect-GET con aviso opcional.</summary>
     protected void IrA(string url, string? aviso = null)
-        => Navegacion.NavigateTo(aviso is null ? url : $"{url}?aviso={aviso}");
+        => Navegacion.NavigateTo(aviso is null ? url : $"{url}{(url.Contains('?') ? '&' : '?')}aviso={aviso}");
 }

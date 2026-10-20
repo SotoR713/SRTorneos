@@ -1,4 +1,5 @@
 @page "/equipos"
+@attribute [Authorize]
 @inherits EquiposBase
 
 <PageTitle>SRTorneos | Equipos</PageTitle>
@@ -12,14 +13,14 @@
 <div class="split-layout">
     <section class="panel">
         <header class="panel__header"><h2>Equipos <span class="count-pill">@Lista.Count</span></h2></header>
+        <form method="post" @formname="eliminar-equipo" @onsubmit="EliminarAsync">
+        <AntiforgeryToken />
         @if (Lista.Count == 0)
         {
             <p class="panel__empty">Aún no hay equipos registrados.</p>
         }
         else
         {
-            <form method="post" @formname="eliminar-equipo" @onsubmit="EliminarAsync">
-                <AntiforgeryToken />
                 <table class="data-table">
                     <thead><tr><th>Equipo</th><th class="num">Torneos</th><th class="actions"></th></tr></thead>
                     <tbody>
@@ -40,8 +41,8 @@
                         }
                     </tbody>
                 </table>
-            </form>
         }
+        </form>
     </section>
 
     <section class="panel panel--form">

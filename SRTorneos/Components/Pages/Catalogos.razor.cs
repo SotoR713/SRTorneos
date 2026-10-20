@@ -41,26 +41,13 @@ public class CatalogosBase : PaginaBase
         }
     }
 
-    protected string Mostrar(string valor)
-        => Definicion is { Numerico: true } && int.TryParse(valor, out int numero) ? Presentacion.Puesto(numero) : valor;
-
     protected async Task GuardarAsync()
     {
         if (Definicion is null || FormCatalogo is null) return;
         var form = FormCatalogo;
         string valor = form.Valor.Trim();
 
-        if (Definicion.Numerico)
-        {
-            if (!int.TryParse(valor, out int numero) || numero < 0 || numero > 999)
-            {
-                Error = "El puesto debe ser un número entre 0 y 999.";
-                return;
-            }
-
-            valor = numero.ToString();
-        }
-        else if (valor.Length > Definicion.LargoMaximo)
+        if (valor.Length > Definicion.LargoMaximo)
         {
             Error = $"El nombre no puede superar {Definicion.LargoMaximo} caracteres.";
             return;
@@ -74,7 +61,7 @@ public class CatalogosBase : PaginaBase
 
         if (Lista.Any(e => e.Id != form.Id && string.Equals(e.Valor.Trim(), valor, StringComparison.CurrentCultureIgnoreCase)))
         {
-            Error = $"Ya existe «{Mostrar(valor)}» en {Definicion.Titulo.ToLowerInvariant()}.";
+            Error = $"Ya existe «{valor}» en {Definicion.Titulo.ToLowerInvariant()}.";
             return;
         }
 

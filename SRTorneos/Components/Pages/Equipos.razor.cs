@@ -25,7 +25,7 @@ public class EquiposBase : PaginaBase
         if (FormEquipo is null)
         {
             var editar = Lista.FirstOrDefault(e => e.Id == Editar);
-            FormEquipo = editar is null ? new Equipo() : new Equipo { Id = editar.Id, Nombre = editar.Nombre };
+            FormEquipo = editar is null ? new Equipo() : new Equipo { Id = editar.Id, Nombre = editar.Nombre, Clave = editar.Clave };
         }
     }
 
@@ -40,11 +40,9 @@ public class EquiposBase : PaginaBase
             return;
         }
 
-        if (Lista.Any(e => e.Id != equipo.Id && string.Equals(e.Nombre.Trim(), equipo.Nombre.Trim(), StringComparison.CurrentCultureIgnoreCase)))
-        {
-            Error = $"Ya existe un equipo llamado «{equipo.Nombre.Trim()}».";
-            return;
-        }
+        // El nombre se puede repetir (p. ej. «Cuervos» en dos torneos); la clave no.
+        var ocupadas = Lista.Where(e => e.Id != equipo.Id).Select(e => e.Clave).ToList();
+        if (!AsignarClave(equipo, ocupadas)) return;
 
         if (equipo.Id > 0)
         {
@@ -53,8 +51,32 @@ public class EquiposBase : PaginaBase
             return;
         }
 
-        if (await IntentarAsync(() => EquipoRepository.CrearAsync(equipo.Nombre), "No se pudo crear el equipo."))
+        if (await IntentarAsync(() => EquipoRepository.CrearAsync(equipo.Nombre, equipo.Clave!), "No se pudo crear el equipo."))
             IrA("equipos", "equipo-creado");
+    }
+
+    /// <summary>Clave escrita (validada) o, si viene vacía, una propuesta a partir del nombre.</summary>
+    private bool AsignarClave(Equipo equipo, IReadOnlyCollection<string> ocupadas)
+    {
+        string clave = ClaveEquipo.Normalizar(equipo.Clave);
+        if (string.IsNullOrWhiteSpace(equipo.Clave))
+        {
+            clave = ClaveEquipo.Proponer(equipo.Nombre, ocupadas);
+        }
+        else if (clave != equipo.Clave!.Trim().ToUpperInvariant())
+        {
+            Error = "La clave solo puede llevar letras sin acento y números (máximo 3).";
+            return false;
+        }
+
+        if (ocupadas.Contains(clave, StringComparer.OrdinalIgnoreCase))
+        {
+            Error = $"La clave «{clave}» ya la usa otro equipo. Prueba con «{ClaveEquipo.Proponer(equipo.Nombre, ocupadas)}».";
+            return false;
+        }
+
+        equipo.Clave = clave;
+        return true;
     }
 
     protected async Task EliminarAsync()

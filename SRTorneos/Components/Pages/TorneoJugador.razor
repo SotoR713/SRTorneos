@@ -21,7 +21,7 @@ else
             <div class="profile-hero__info">
                 <p class="eyebrow">@(string.IsNullOrWhiteSpace(Jugador.Posicion) ? "JUGADOR" : Jugador.Posicion.ToUpperInvariant())</p>
                 <h1>@Jugador.Nombre</h1>
-                <p><a href="torneos/@Id/equipos/@Jugador.IdEquipo"><Escudo Nombre="@Jugador.Equipo" Tamano="xs" /> @Jugador.Equipo</a></p>
+                <p><a href="torneos/@Id/equipos/@Jugador.IdEquipo"><Escudo Nombre="@Jugador.Equipo" Clave="@Jugador.EquipoClave" Tamano="xs" /> @Jugador.Equipo</a></p>
             </div>
             <div class="profile-hero__actions">
                 <BotonCompartir Texto="@($"{Jugador.Nombre} (#{Jugador.Numero}, {Jugador.Equipo}): {Jugador.Puntos} puntos en {Torneo.Nombre}")" Ruta="@($"torneos/{Id}/jugadores/{IdJugador}")" />
@@ -66,7 +66,7 @@ else
                                 var marcador = partido.MarcadorDe(Jugador.IdEquipo);
                                 <tr>
                                     <td class="nowrap"><a href="torneos/@Id/partidos/@partido.Id">@Presentacion.DiaRelativo(partido.Fecha)</a></td>
-                                    <td><span class="player-cell"><Escudo Nombre="@rival.Nombre" Tamano="xs" /><span>@(partido.IdEquipo1 == Jugador.IdEquipo ? "vs" : "en") @rival.Nombre</span></span></td>
+                                    <td><span class="player-cell"><Escudo Nombre="@rival.Nombre" Clave="@rival.Clave" Tamano="xs" /><span>@(partido.IdEquipo1 == Jugador.IdEquipo ? "vs" : "en") @rival.Nombre</span></span></td>
                                     <td class="nowrap">
                                         @if (marcador is { } m)
                                         {

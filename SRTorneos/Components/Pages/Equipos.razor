@@ -5,7 +5,7 @@
 <PageTitle>SRTorneos | Equipos</PageTitle>
 
 <section class="page-heading">
-    <div><p class="eyebrow text-accent">CATÁLOGO</p><h1>Equipos</h1><p>Todos los equipos registrados. Inscríbelos a un torneo desde la pestaña Equipos del torneo.</p></div>
+    <div><p class="eyebrow text-accent">CATÁLOGO</p><h1>Equipos</h1><p>Todos los equipos registrados. El nombre se puede repetir; la clave es la que identifica a cada equipo.</p></div>
 </section>
 
 <Avisos Aviso="@Aviso" Error="@Error" />
@@ -21,14 +21,15 @@
         }
         else
         {
-                <table class="data-table">
-                    <thead><tr><th>Equipo</th><th class="num">Torneos</th><th class="actions"></th></tr></thead>
+                <table class="data-table tabla-tarjetas">
+                    <thead><tr><th>Equipo</th><th>Clave</th><th class="num">Torneos</th><th class="actions"></th></tr></thead>
                     <tbody>
                         @foreach (var equipo in Lista)
                         {
                             <tr class="@(equipo.Id == Editar ? "is-editing" : null)">
-                                <td class="row-title">@equipo.Nombre</td>
-                                <td class="num">@equipo.Torneos</td>
+                                <td class="celda-titulo"><span class="player-cell"><Escudo Nombre="@equipo.Nombre" Clave="@equipo.Clave" Tamano="xs" /><strong>@equipo.Nombre</strong></span></td>
+                                <td data-label="Clave"><code class="clave">@equipo.Clave</code></td>
+                                <td class="num" data-label="Torneos">@equipo.Torneos</td>
                                 <td class="actions">
                                     <a class="btn btn-sm btn-light" href="equipos?editar=@equipo.Id">Editar</a>
                                     @if (equipo.Torneos == 0)
@@ -45,7 +46,9 @@
         </form>
     </section>
 
-    <section class="panel panel--form">
+    <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Equipo</a>
+
+    <section class="panel panel--form" id="formulario">
         <header class="panel__header"><h2>@(EnEdicion ? "Editar equipo" : "Nuevo equipo")</h2></header>
         @if (FormEquipo is not null)
         {
@@ -53,6 +56,12 @@
                 <DataAnnotationsValidator />
                 <input type="hidden" name="FormEquipo.Id" value="@FormEquipo.Id" />
                 <div class="form-field"><label for="nombreEquipo">Nombre</label><InputText id="nombreEquipo" class="form-control" @bind-Value="FormEquipo.Nombre" maxlength="20" /><ValidationMessage For="@(() => FormEquipo.Nombre)" /></div>
+                <div class="form-field">
+                    <label for="claveEquipo">Clave</label>
+                    <InputText id="claveEquipo" class="form-control input-clave" @bind-Value="FormEquipo.Clave" maxlength="3" placeholder="HAL" data-clave-de="nombreEquipo" autocomplete="off" />
+                    <small class="field-hint">3 letras o números, no se repite entre equipos. Se propone sola con el nombre; puedes cambiarla.</small>
+                    <ValidationMessage For="@(() => FormEquipo.Clave)" />
+                </div>
                 <div class="form-actions">
                     @if (EnEdicion) { <a class="btn btn-light" href="equipos">Cancelar</a> }
                     <button class="btn btn-accent" type="submit">@(EnEdicion ? "Guardar" : "Crear equipo")</button>

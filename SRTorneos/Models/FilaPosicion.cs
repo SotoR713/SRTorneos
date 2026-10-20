@@ -4,6 +4,7 @@ public class FilaPosicion
 {
     public int IdEquipo { get; set; }
     public string Equipo { get; set; } = string.Empty;
+    public string Clave { get; set; } = string.Empty;
     public int Jugados { get; set; }
     public int Ganados { get; set; }
     public int Perdidos { get; set; }

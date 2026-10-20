@@ -34,7 +34,7 @@ else
                             {
                                 <li>
                                     <a href="torneos/@Id/jugadores/@jugador.IdJugador">
-                                        <Escudo Nombre="@jugador.Equipo" Tamano="xs" />
+                                        <Escudo Nombre="@jugador.Equipo" Clave="@jugador.EquipoClave" Tamano="xs" />
                                         <span class="leader-card__name">@jugador.Nombre<small>#@jugador.Numero · @jugador.Equipo</small></span>
                                         <b>@valor</b>
                                     </a>
@@ -78,7 +78,7 @@ else
                             <tr>
                                 <td>
                                     <a class="player-cell" href="torneos/@Id/jugadores/@jugador.IdJugador">
-                                        <Escudo Nombre="@jugador.Equipo" Tamano="xs" />
+                                        <Escudo Nombre="@jugador.Equipo" Clave="@jugador.EquipoClave" Tamano="xs" />
                                         <span><strong>@jugador.Nombre</strong><small>#@jugador.Numero · @jugador.Equipo</small></span>
                                     </a>
                                 </td>

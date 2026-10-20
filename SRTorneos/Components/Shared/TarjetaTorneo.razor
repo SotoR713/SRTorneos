@@ -5,7 +5,7 @@
         <span class="badge-estado @Presentacion.ClaseEstado(Torneo.Estado)">@Presentacion.EtiquetaEstado(Torneo.Estado)</span>
     </div>
     <h2><a class="stretched-link" href="torneos/@Torneo.Id">@Torneo.Nombre</a></h2>
-    <p class="tournament-meta">@Torneo.Deporte · @Torneo.TipoTorneo</p>
+    <p class="tournament-meta">@Presentacion.DeporteYTipo(Torneo)</p>
     <p class="tournament-dates">@Presentacion.Fecha(Torneo.FechaInicio) — @Presentacion.Fecha(Torneo.FechaFin)</p>
     @if (Torneo.Partidos > 0)
     {

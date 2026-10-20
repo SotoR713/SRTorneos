@@ -21,10 +21,10 @@ public class CatalogoRepository(ISqlConnectionFactory connectionFactory)
             l => new ElementoCatalogo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre") },
             cancellationToken: cancellationToken);
 
-    /// <summary>Puestos.Nombre es INT en la base; se presenta como texto ("1°", "Sin definir").</summary>
+    /// <summary>Puestos.Nombre es texto ("Inscrito", "Campeón", "1°"…). En el orden en que se registraron.</summary>
     public Task<List<ElementoCatalogo>> ObtenerPuestosAsync(CancellationToken cancellationToken = default)
-        => ConsultarAsync("SELECT Id, Nombre FROM Puestos ORDER BY Nombre;",
-            l => new ElementoCatalogo { Id = l.Entero("Id"), Nombre = FormatearPuesto(l.Entero("Nombre")) },
+        => ConsultarAsync("SELECT Id, CAST(Nombre AS varchar(20)) AS Nombre FROM Puestos ORDER BY Id;",
+            l => new ElementoCatalogo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre") },
             cancellationToken: cancellationToken);
 
     public Task<List<ElementoCatalogo>> ObtenerTiposFaltaAsync(CancellationToken cancellationToken = default)
@@ -33,11 +33,11 @@ public class CatalogoRepository(ISqlConnectionFactory connectionFactory)
             cancellationToken: cancellationToken);
 
     public Task<List<ElementoCatalogoUso>> ObtenerConUsoAsync(CatalogoDefinicion catalogo, CancellationToken cancellationToken = default)
-        => ConsultarAsync($"SELECT c.Id, c.Nombre, {catalogo.ConsultaUsos} AS Usos FROM {catalogo.Tabla} c ORDER BY c.Nombre;",
+        => ConsultarAsync($"SELECT c.Id, CAST(c.Nombre AS varchar(50)) AS Nombre, {catalogo.ConsultaUsos} AS Usos FROM {catalogo.Tabla} c ORDER BY {(catalogo.OrdenPorId ? "c.Id" : "c.Nombre")};",
             l => new ElementoCatalogoUso
             {
                 Id = l.Entero("Id"),
-                Valor = catalogo.Numerico ? l.Entero("Nombre").ToString() : l.Texto("Nombre"),
+                Valor = l.Texto("Nombre"),
                 Usos = l.Entero("Usos")
             },
             cancellationToken: cancellationToken);
@@ -57,10 +57,5 @@ public class CatalogoRepository(ISqlConnectionFactory connectionFactory)
         => await EjecutarAsync($"DELETE FROM {catalogo.Tabla} WHERE Id = @id;", p => p.Entero("@id", id), cancellationToken) == 1;
 
     private static void ParametroValor(Microsoft.Data.SqlClient.SqlParameterCollection p, CatalogoDefinicion catalogo, string valor)
-    {
-        if (catalogo.Numerico) p.Entero("@valor", int.Parse(valor));
-        else p.Texto("@valor", valor.Trim(), catalogo.LargoMaximo);
-    }
-
-    public static string FormatearPuesto(int puesto) => puesto <= 0 ? "Sin definir" : $"{puesto}°";
+        => p.Texto("@valor", valor.Trim(), catalogo.LargoMaximo);
 }

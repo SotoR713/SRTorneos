@@ -9,8 +9,10 @@ public class PartidoResumen
     public DateTime Fecha { get; set; }
     public int IdEquipo1 { get; set; }
     public string Equipo1 { get; set; } = string.Empty;
+    public string Clave1 { get; set; } = string.Empty;
     public int IdEquipo2 { get; set; }
     public string Equipo2 { get; set; } = string.Empty;
+    public string Clave2 { get; set; } = string.Empty;
     public int IdLugar { get; set; }
     public string Lugar { get; set; } = string.Empty;
     public int? Puntos1 { get; set; }
@@ -24,8 +26,8 @@ public class PartidoResumen
     public bool Juega(int idEquipo) => IdEquipo1 == idEquipo || IdEquipo2 == idEquipo;
 
     /// <summary>Rival de <paramref name="idEquipo"/> en este partido.</summary>
-    public (int IdEquipo, string Nombre) Rival(int idEquipo)
-        => idEquipo == IdEquipo1 ? (IdEquipo2, Equipo2) : (IdEquipo1, Equipo1);
+    public (int IdEquipo, string Nombre, string Clave) Rival(int idEquipo)
+        => idEquipo == IdEquipo1 ? (IdEquipo2, Equipo2, Clave2) : (IdEquipo1, Equipo1, Clave1);
 
     /// <summary>Puntos a favor y en contra desde el punto de vista de <paramref name="idEquipo"/>.</summary>
     public (int AFavor, int EnContra)? MarcadorDe(int idEquipo)

@@ -34,14 +34,14 @@
             }
             else
             {
-                    <table class="data-table">
-                        <thead><tr><th>@(Definicion.Numerico ? "Puesto" : "Nombre")</th><th class="num">En uso</th><th class="actions"></th></tr></thead>
+                    <table class="data-table tabla-tarjetas">
+                        <thead><tr><th>Nombre</th><th class="num">En uso</th><th class="actions"></th></tr></thead>
                         <tbody>
                             @foreach (var elemento in Lista)
                             {
                                 <tr class="@(elemento.Id == Editar ? "is-editing" : null)">
-                                    <td class="row-title">@Mostrar(elemento.Valor)</td>
-                                    <td class="num">@elemento.Usos <small class="text-muted">@Definicion.DondeSeUsa</small></td>
+                                    <td class="row-title celda-titulo">@elemento.Valor</td>
+                                    <td class="num" data-label="En uso">@elemento.Usos <small class="text-muted">@Definicion.DondeSeUsa</small></td>
                                     <td class="actions">
                                         <a class="btn btn-sm btn-light" href="catalogos/@Definicion.Clave?editar=@elemento.Id">Editar</a>
                                         @if (elemento.Usos == 0)
@@ -58,7 +58,9 @@
             </form>
         </section>
 
-        <section class="panel panel--form">
+        <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Agregar</a>
+
+        <section class="panel panel--form" id="formulario">
             <header class="panel__header"><h2>@(EnEdicion ? $"Editar {Definicion.Singular}" : $"Nuevo {Definicion.Singular}")</h2></header>
             @if (FormCatalogo is not null)
             {
@@ -66,17 +68,9 @@
                     <DataAnnotationsValidator />
                     <input type="hidden" name="FormCatalogo.Id" value="@FormCatalogo.Id" />
                     <div class="form-field">
-                        <label for="valor">@(Definicion.Numerico ? "Número de puesto" : "Nombre")</label>
-                        @if (Definicion.Numerico)
-                        {
-                            <InputText id="valor" class="form-control" type="number" min="0" max="999" @bind-Value="FormCatalogo.Valor" />
-                            <small class="field-hint">0 = Sin definir, 1 = primer lugar, 2 = segundo…</small>
-                        }
-                        else
-                        {
-                            <InputText id="valor" class="form-control" maxlength="@Definicion.LargoMaximo" @bind-Value="FormCatalogo.Valor" />
-                            <small class="field-hint">Máximo @Definicion.LargoMaximo caracteres.</small>
-                        }
+                        <label for="valor">Nombre</label>
+                        <InputText id="valor" class="form-control" maxlength="@Definicion.LargoMaximo" @bind-Value="FormCatalogo.Valor" />
+                        <small class="field-hint">Máximo @Definicion.LargoMaximo caracteres.</small>
                         <ValidationMessage For="@(() => FormCatalogo.Valor)" />
                     </div>
                     <div class="form-actions">

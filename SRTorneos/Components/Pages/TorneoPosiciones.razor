@@ -45,7 +45,7 @@ else
                         {
                             <tr class="@(lugar <= 3 && fila.Jugados > 0 ? $"top-{lugar}" : null)">
                                 <td class="num"><span class="rank">@lugar</span></td>
-                                <td><a class="player-cell" href="torneos/@Id/equipos/@fila.IdEquipo"><Escudo Nombre="@fila.Equipo" Tamano="xs" /><strong>@fila.Equipo</strong></a></td>
+                                <td><a class="player-cell" href="torneos/@Id/equipos/@fila.IdEquipo"><Escudo Nombre="@fila.Equipo" Clave="@fila.Clave" Tamano="xs" /><strong>@fila.Equipo</strong></a></td>
                                 <td class="num">@fila.Jugados</td>
                                 <td class="num">@fila.Ganados</td>
                                 <td class="num">@fila.Perdidos</td>

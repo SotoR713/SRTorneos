@@ -21,15 +21,15 @@
         }
         else
         {
-                <table class="data-table">
+                <table class="data-table tabla-tarjetas">
                     <thead><tr><th>Lugar</th><th>Dirección</th><th class="num">Partidos</th><th class="actions"></th></tr></thead>
                     <tbody>
                         @foreach (var lugar in Lista)
                         {
                             <tr class="@(lugar.Id == Editar ? "is-editing" : null)">
-                                <td class="row-title">@lugar.Nombre</td>
-                                <td>@lugar.Direccion</td>
-                                <td class="num">@lugar.Partidos</td>
+                                <td class="row-title celda-titulo">@lugar.Nombre</td>
+                                <td data-label="Dirección">@lugar.Direccion</td>
+                                <td class="num" data-label="Partidos">@lugar.Partidos</td>
                                 <td class="actions">
                                     <a class="btn btn-sm btn-light" href="lugares?editar=@lugar.Id">Editar</a>
                                     @if (lugar.Partidos == 0)
@@ -46,7 +46,9 @@
         </form>
     </section>
 
-    <section class="panel panel--form">
+    <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Lugar</a>
+
+    <section class="panel panel--form" id="formulario">
         <header class="panel__header"><h2>@(EnEdicion ? "Editar lugar" : "Nuevo lugar")</h2></header>
         @if (FormLugar is not null)
         {

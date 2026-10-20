@@ -6,7 +6,7 @@
         <div class="detail-title">
             <span class="tournament-icon tournament-icon--lg">@Presentacion.IconoDeporte(Torneo.Deporte)</span>
             <div>
-                <p class="eyebrow text-accent">@Torneo.Deporte.ToUpperInvariant() · @Torneo.TipoTorneo.ToUpperInvariant()</p>
+                <p class="eyebrow text-accent">@Presentacion.DeporteYTipo(Torneo).ToUpperInvariant()</p>
                 <h1>@Torneo.Nombre</h1>
                 <p class="torneo-header__meta">
                     <span class="badge-estado @Presentacion.ClaseEstado(Torneo.Estado)">@Presentacion.EtiquetaEstado(Torneo.Estado)</span>

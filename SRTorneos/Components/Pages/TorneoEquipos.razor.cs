@@ -42,9 +42,9 @@ public class TorneoEquiposBase : TorneoPaginaBase
             FormInscripcion = editar is null
                 ? new InscripcionFormulario
                 {
-                    // Valores sugeridos: primer estado y primer puesto del catálogo.
+                    // Valores sugeridos: primer estado del catálogo y el puesto «Inscrito».
                     IdEstado = Estados.FirstOrDefault()?.Id ?? 0,
-                    IdPuesto = Puestos.FirstOrDefault()?.Id ?? 0
+                    IdPuesto = SRTorneos.Models.Puestos.PorDefecto(Puestos)
                 }
                 : new InscripcionFormulario
                 {
@@ -104,16 +104,26 @@ public class TorneoEquiposBase : TorneoPaginaBase
         }
 
         string nombre = form.NuevoEquipo!.Trim();
-        bool existe = false;
-        if (!await IntentarAsync(async () => existe = await EquipoRepository.ExisteNombreAsync(nombre), ErrorConexion)) return;
+        List<string> ocupadas = [];
+        if (!await IntentarAsync(async () => ocupadas = await EquipoRepository.ObtenerClavesAsync(), ErrorConexion)) return;
 
-        if (existe)
+        // El nombre se puede repetir; la clave identifica al equipo y no se repite.
+        string clave = string.IsNullOrWhiteSpace(form.NuevaClave)
+            ? ClaveEquipo.Proponer(nombre, ocupadas)
+            : ClaveEquipo.Normalizar(form.NuevaClave);
+        if (!string.IsNullOrWhiteSpace(form.NuevaClave) && clave != form.NuevaClave.Trim().ToUpperInvariant())
         {
-            Error = $"Ya existe un equipo llamado «{nombre}». Selecciónalo en la lista de equipos existentes.";
+            Error = "La clave solo puede llevar letras sin acento y números (máximo 3).";
             return;
         }
 
-        if (await IntentarAsync(() => EquipoRepository.CrearEInscribirAsync(Id, nombre, form.IdEstado, form.IdPuesto),
+        if (ocupadas.Contains(clave, StringComparer.OrdinalIgnoreCase))
+        {
+            Error = $"La clave «{clave}» ya la usa otro equipo. Prueba con «{ClaveEquipo.Proponer(nombre, ocupadas)}».";
+            return;
+        }
+
+        if (await IntentarAsync(() => EquipoRepository.CrearEInscribirAsync(Id, nombre, clave, form.IdEstado, form.IdPuesto),
                 "No se pudo crear e inscribir el equipo."))
         {
             IrA($"torneos/{Id}/equipos", "equipo-inscrito");

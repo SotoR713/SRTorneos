@@ -20,11 +20,11 @@ else
         <a class="back-link" href="torneos/@Id/equipos">← Equipos inscritos</a>
 
         <section class="profile-hero" style="--escudo: @Presentacion.ColorEquipo(Equipo.Nombre)">
-            <Escudo Nombre="@Equipo.Nombre" Tamano="xl" />
+            <Escudo Nombre="@Equipo.Nombre" Clave="@Equipo.Clave" Tamano="xl" />
             <div class="profile-hero__info">
                 <p class="eyebrow">EQUIPO · @Equipo.Estado.ToUpperInvariant()</p>
                 <h1>@Equipo.Nombre</h1>
-                <p>@Plantilla.Count jugadores@(Equipo.Puesto > 0 ? $" · Puesto final {Presentacion.Puesto(Equipo.Puesto)}" : "")</p>
+                <p>@Plantilla.Count jugadores@(SRTorneos.Models.Puestos.EsInicial(Equipo.Puesto) ? "" : $" · {SRTorneos.Models.Puestos.Mostrar(Equipo.Puesto)}")</p>
             </div>
             <div class="profile-hero__actions">
                 <BotonCompartir Texto="@($"{Equipo.Nombre} en {Torneo.Nombre}")" Ruta="@($"torneos/{Id}/equipos/{IdEquipo}")" />
@@ -79,18 +79,18 @@ else
                 else
                 {
                         <div class="table-responsive">
-                            <table class="data-table">
+                            <table class="data-table tabla-tarjetas">
                                 <thead><tr><th class="num">#</th><th>Jugador</th><th class="hide-sm">Posición</th><th class="num">PTS</th><th class="num">PROM</th><th class="num">FAL</th><th class="actions"></th></tr></thead>
                                 <tbody>
                                     @foreach (var jugador in Plantilla)
                                     {
                                         <tr class="@(jugador.IdJugador == Editar ? "is-editing" : null)">
-                                            <td class="num"><span class="jersey">@jugador.Numero</span></td>
-                                            <td><a class="row-title" href="torneos/@Id/jugadores/@jugador.IdJugador">@jugador.Nombre</a></td>
-                                            <td class="hide-sm">@jugador.Posicion</td>
-                                            <td class="num"><strong>@jugador.Puntos</strong></td>
-                                            <td class="num">@Presentacion.Decimal(EstadisticaDe(jugador.IdJugador)?.Promedio ?? 0)</td>
-                                            <td class="num">@jugador.Faltas</td>
+                                            <td class="num celda-camiseta"><span class="jersey">@jugador.Numero</span></td>
+                                            <td class="celda-titulo"><a class="row-title" href="torneos/@Id/jugadores/@jugador.IdJugador">@jugador.Nombre</a></td>
+                                            <td class="hide-sm" data-label="Posición">@jugador.Posicion</td>
+                                            <td class="num" data-label="Puntos"><strong>@jugador.Puntos</strong></td>
+                                            <td class="num" data-label="Promedio">@Presentacion.Decimal(EstadisticaDe(jugador.IdJugador)?.Promedio ?? 0)</td>
+                                            <td class="num" data-label="Faltas">@jugador.Faltas</td>
                                             <td class="actions">
                                                 @if (EsAdmin) { <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@IdEquipo?editar=@jugador.IdJugador">Editar</a> }
                                                 @if (EsAdmin && jugador.Puntos == 0 && jugador.Faltas == 0)
@@ -111,7 +111,8 @@ else
             @if (EsAdmin)
             {
             <div class="stack">
-                <section class="panel panel--form">
+                <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Jugador</a>
+                <section class="panel panel--form" id="formulario">
                     <header class="panel__header"><h2>@(EnEdicion ? "Editar jugador" : "Agregar jugador nuevo")</h2></header>
                     @if (FormJugador is not null)
                     {

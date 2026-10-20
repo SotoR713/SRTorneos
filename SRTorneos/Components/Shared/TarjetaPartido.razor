@@ -15,12 +15,12 @@
         <span class="chip @claseEstado">@estado</span>
     </span>
     <span class="match-card__row @(Partido.GanoLocal ? "winner" : null) @(Partido.GanoVisitante ? "loser" : null)">
-        <Escudo Nombre="@Partido.Equipo1" Tamano="sm" />
+        <Escudo Nombre="@Partido.Equipo1" Clave="@Partido.Clave1" Tamano="sm" />
         <span class="match-card__team">@Partido.Equipo1</span>
         <b class="match-card__score">@Partido.Puntos1</b>
     </span>
     <span class="match-card__row @(Partido.GanoVisitante ? "winner" : null) @(Partido.GanoLocal ? "loser" : null)">
-        <Escudo Nombre="@Partido.Equipo2" Tamano="sm" />
+        <Escudo Nombre="@Partido.Equipo2" Clave="@Partido.Clave2" Tamano="sm" />
         <span class="match-card__team">@Partido.Equipo2</span>
         <b class="match-card__score">@Partido.Puntos2</b>
     </span>

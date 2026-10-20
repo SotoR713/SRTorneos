@@ -38,17 +38,17 @@ else
             else
             {
                     <div class="table-responsive">
-                        <table class="data-table">
+                        <table class="data-table tabla-tarjetas">
                             <thead><tr><th>Equipo</th><th class="num">Jugadores</th><th class="num">Partidos</th><th>Estado</th><th>Puesto</th><th class="actions"></th></tr></thead>
                             <tbody>
                                 @foreach (var equipo in Inscritos)
                                 {
                                     <tr class="@(equipo.IdEquipo == Editar ? "is-editing" : null)">
-                                        <td><a class="player-cell" href="torneos/@Id/equipos/@equipo.IdEquipo"><Escudo Nombre="@equipo.Nombre" Tamano="xs" /><strong>@equipo.Nombre</strong></a></td>
-                                        <td class="num">@equipo.Jugadores</td>
-                                        <td class="num">@equipo.Partidos</td>
-                                        <td><span class="badge-soft">@equipo.Estado</span></td>
-                                        <td>@Presentacion.Puesto(equipo.Puesto)</td>
+                                        <td class="celda-titulo"><a class="player-cell" href="torneos/@Id/equipos/@equipo.IdEquipo"><Escudo Nombre="@equipo.Nombre" Clave="@equipo.Clave" Tamano="xs" /><span><strong>@equipo.Nombre</strong><small>@equipo.Clave</small></span></a></td>
+                                        <td class="num" data-label="Jugadores">@equipo.Jugadores</td>
+                                        <td class="num" data-label="Partidos">@equipo.Partidos</td>
+                                        <td data-label="Estado"><span class="badge-soft">@equipo.Estado</span></td>
+                                        <td data-label="Puesto">@SRTorneos.Models.Puestos.Mostrar(equipo.Puesto)</td>
                                         <td class="actions">
                                             <a class="btn btn-sm btn-light" href="torneos/@Id/equipos/@equipo.IdEquipo">Plantilla</a>
                                             @if (EsAdmin) { <a class="btn btn-sm btn-light" href="torneos/@Id/equipos?editar=@equipo.IdEquipo">Editar</a> }
@@ -69,7 +69,8 @@ else
 
         @if (EsAdmin)
         {
-        <section class="panel panel--form">
+        <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Inscribir</a>
+        <section class="panel panel--form" id="formulario">
             @if (FormInscripcion is not null)
             {
                 <header class="panel__header"><h2>@(EnEdicion ? $"Editar inscripción: {EquipoEnEdicion?.Nombre}" : "Inscribir equipo")</h2></header>
@@ -90,7 +91,7 @@ else
                                 <label for="equipo">Equipo existente</label>
                                 <InputSelect id="equipo" class="form-select" @bind-Value="FormInscripcion.IdEquipo">
                                     <option value="0">— Selecciona —</option>
-                                    @foreach (var equipo in Disponibles) { <option value="@equipo.Id">@equipo.Nombre</option> }
+                                    @foreach (var equipo in Disponibles) { <option value="@equipo.Id">@equipo.Nombre (@equipo.Clave)</option> }
                                 </InputSelect>
                                 <ValidationMessage For="@(() => FormInscripcion.IdEquipo)" />
                             </div>
@@ -99,6 +100,12 @@ else
                                 <label for="nuevoEquipo">Nombre del equipo nuevo</label>
                                 <InputText id="nuevoEquipo" class="form-control" @bind-Value="FormInscripcion.NuevoEquipo" maxlength="20" placeholder="Ej. Halcones" />
                                 <ValidationMessage For="@(() => FormInscripcion.NuevoEquipo)" />
+                            </div>
+                            <div class="form-field">
+                                <label for="nuevaClave">Clave del equipo nuevo</label>
+                                <InputText id="nuevaClave" class="form-control input-clave" @bind-Value="FormInscripcion.NuevaClave" maxlength="3" placeholder="HAL" data-clave-de="nuevoEquipo" autocomplete="off" />
+                                <small class="field-hint">Se propone sola con el nombre; puedes cambiarla. No se repite entre equipos.</small>
+                                <ValidationMessage For="@(() => FormInscripcion.NuevaClave)" />
                             </div>
                         }
 
@@ -115,7 +122,7 @@ else
                                 <label for="puesto">Puesto</label>
                                 <InputSelect id="puesto" class="form-select" @bind-Value="FormInscripcion.IdPuesto">
                                     <option value="0">— Selecciona —</option>
-                                    @foreach (var puesto in Puestos) { <option value="@puesto.Id">@puesto.Nombre</option> }
+                                    @foreach (var puesto in Puestos) { <option value="@puesto.Id">@SRTorneos.Models.Puestos.Mostrar(puesto.Nombre)</option> }
                                 </InputSelect>
                                 <ValidationMessage For="@(() => FormInscripcion.IdPuesto)" />
                             </div>

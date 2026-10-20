@@ -1006,6 +1006,13 @@ body { background: var(--fondo); -webkit-tap-highlight-color: transparent; }
 .escudo--sm { width: 30px; height: 30px; font-size: .68rem; }
 .escudo--lg { width: 64px; height: 64px; font-size: 1.35rem; }
 .escudo--xl { width: 84px; height: 84px; font-size: 1.8rem; }
+.escudo--3 { letter-spacing: -.03em; font-size: .7rem; }
+.escudo--3.escudo--xs { font-size: .5rem; }
+.escudo--3.escudo--sm { font-size: .6rem; }
+.escudo--3.escudo--lg { font-size: 1.1rem; }
+.escudo--3.escudo--xl { font-size: 1.5rem; }
+.clave { padding: .15rem .45rem; color: var(--tinta); font-size: .8rem; font-weight: 800; letter-spacing: .06em; background: #eef1f5; border-radius: 6px; }
+.input-clave { max-width: 110px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 
 /* ---- Chips de estado ---- */
 .chip {
@@ -1292,4 +1299,151 @@ a.player-cell:hover strong { color: var(--acento-oscuro); }
     .stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .segmented { display: flex; }
     .segmented a { flex: 1; text-align: center; }
+}
+
+/* =====================================================================
+   v11 · Responsivo en cualquier dispositivo y más cómodo de usar
+   ===================================================================== */
+
+/* Ningún bloque de una cuadrícula puede ensanchar la página (tablas largas, textos sin espacios). */
+.split-layout > *, .panel-grid > *, .stack > *, .match-grid > *, .leader-grid > *, .venue-grid > *, .tournament-grid > * { min-width: 0; }
+.panel__header { flex-wrap: wrap; row-gap: .35rem; }
+.panel__header h2 { min-width: 0; }
+.panel__hint { overflow-wrap: anywhere; }
+.row-title, .player-cell strong, .leader-card__name { overflow-wrap: anywhere; }
+img, svg, video { max-width: 100%; }
+
+/* Foco visible para quien navega con teclado. */
+a:focus-visible, button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+    outline: 3px solid #f6a35f;
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/* Botón flotante «＋» (solo celular y tablet): lleva al formulario sin bajar toda la lista. */
+.fab { display: none; }
+
+/* Pantallas grandes: un poco más de ancho útil. */
+@media (min-width: 1600px) {
+    .content { max-width: 1360px; }
+}
+
+/* Tablet horizontal y laptops chicas: barra lateral más angosta. */
+@media (min-width: 901px) and (max-width: 1199px) {
+    .content { padding: 2rem 1.5rem; }
+    .panel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .panel-grid > .leader-card--panel { grid-column: 1 / -1; margin-top: 0; }
+    .heading-actions { max-width: 50%; }
+}
+
+/* Tablet vertical y celular. */
+@media (max-width: 900px) {
+    .fab {
+        position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 25;
+        display: inline-flex; align-items: center; gap: .3rem;
+        padding: .8rem 1.15rem; color: #fff; font-weight: 800; text-decoration: none;
+        background: var(--acento); border-radius: 99px; box-shadow: 0 8px 22px #ed741d55;
+    }
+    .fab:hover, .fab:active { color: #fff; background: var(--acento-oscuro); }
+    .panel--form { scroll-margin-top: 70px; }
+    .page-heading { flex-wrap: wrap; gap: .75rem; }
+    .page-heading .btn { width: 100%; }
+    .split-layout { gap: 1rem; }
+    .result-grid { grid-template-columns: 1fr; gap: .85rem; }
+    .result-team { padding: .75rem; }
+    .result-team .data-table th, .result-team .data-table td { padding: .45rem .3rem; }
+    .count-input { width: 52px; padding-left: .3rem; padding-right: .3rem; text-align: center; }
+    .score-input { width: 84px; }
+    /* El botón de guardar resultado queda a la mano mientras capturas. */
+    .panel form .form-actions:has(> .btn-accent:only-child) {
+        position: sticky; bottom: calc(62px + env(safe-area-inset-bottom)); z-index: 5;
+        margin: 1rem -1rem -1rem; padding: .75rem 1rem; background: #fffffff0; border-top: 1px solid var(--linea);
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    .panel form .form-actions:has(> .btn-accent:only-child) .btn { width: 100%; }
+    .inline-form, .inline-form--wrap { flex-direction: column; align-items: stretch; }
+    .inline-form .btn, .inline-form .form-select { width: 100%; }
+    .form-grid { grid-template-columns: 1fr; }
+    .heading-actions .btn { padding: .45rem .9rem; border-radius: 99px; font-size: .85rem; }
+}
+
+/* Celular: las tablas de administración se convierten en tarjetas legibles. */
+@media (max-width: 640px) {
+    .tabla-tarjetas thead { display: none; }
+    .tabla-tarjetas, .tabla-tarjetas tbody { display: block; width: 100%; }
+    .tabla-tarjetas tr {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .9rem;
+        padding: .85rem .1rem; border-bottom: 1px solid var(--linea);
+    }
+    .tabla-tarjetas tr:last-child { border-bottom: 0; }
+    .tabla-tarjetas td { display: block; padding: 0 !important; border: 0 !important; text-align: left !important; }
+    .tabla-tarjetas td.celda-camiseta { order: 0; }
+    .tabla-tarjetas td.celda-titulo { order: 1; flex: 1 1 60%; font-size: 1rem; font-weight: 700; }
+    .tabla-tarjetas td[data-label] { order: 2; flex: 1 1 40%; display: flex; justify-content: space-between; gap: .5rem; max-width: calc(50% - .45rem); color: var(--tinta); }
+    .tabla-tarjetas td[data-label]::before { content: attr(data-label); color: var(--tinta-suave); font-size: .72rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+    .tabla-tarjetas td.actions { order: 3; flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .4rem; }
+    .tabla-tarjetas td.actions:empty { display: none; }
+    .tabla-tarjetas td.actions .btn { flex: 1 1 auto; margin: 0; }
+    .tabla-tarjetas tr.is-editing { background: #fff7f0; border-radius: .6rem; padding-left: .5rem; padding-right: .5rem; }
+    .tabla-tarjetas .hide-sm { display: none !important; }
+}
+
+/* Pantallas táctiles: blancos de al menos 44 px y texto de 16 px en campos (evita el zoom automático del iPhone). */
+@media (pointer: coarse) {
+    .form-control, .form-select, input, select, textarea { font-size: 16px; }
+    .btn, .btn-pill, .chip-filter, .segmented a, .tab { min-height: 44px; }
+    .btn, .btn-pill { display: inline-flex; align-items: center; justify-content: center; }
+    .btn-sm { min-height: 40px; padding: .45rem .85rem; }
+    .chip-filter { display: inline-flex; align-items: center; }
+    .data-table .actions .btn-link { min-height: 40px; }
+}
+
+/* Celulares muy angostos (320 px). */
+@media (max-width: 360px) {
+    .content { padding-left: .75rem; padding-right: .75rem; }
+    .tabbar__item { font-size: .6rem; }
+    .tabbar__item svg { width: 22px; height: 22px; }
+    .match-card { padding: .75rem .8rem; }
+    .scoreboard { padding: 1rem .6rem; }
+    .scoreboard__score { font-size: 1.7rem; }
+    .scoreboard .escudo--lg { width: 44px; height: 44px; }
+    .profile-hero { padding: 1rem; }
+    .profile-hero__number, .profile-hero .escudo--xl { width: 64px; height: 64px; font-size: 1.6rem; }
+    .stat-tile strong { font-size: 1.15rem; }
+    .fab { padding: .7rem 1rem; }
+}
+
+/* Celular acostado (poca altura): barras más delgadas para dejar ver el contenido. */
+@media (max-height: 500px) and (orientation: landscape) and (max-width: 900px) {
+    .tabbar { padding-top: .15rem; padding-bottom: calc(.15rem + env(safe-area-inset-bottom)); }
+    .tabbar__item { flex-direction: row; justify-content: center; gap: .35rem; }
+    .tabbar__item svg { width: 20px; height: 20px; }
+    .fab { bottom: calc(52px + env(safe-area-inset-bottom)); }
+    .tabs { position: static; }
+}
+
+/* Impresión: tabla, calendario o estadísticas en papel, sin menús. */
+@media print {
+    .sidebar, .top-row, .tabbar, .fab, .heading-actions, .action-row, .btn, .btn-pill, .panel--form, .filter-chips, .segmented, .search-bar, .tabs { display: none !important; }
+    .content { padding: 0; max-width: none; }
+    .panel, .match-card, .leader-card, .stat-tile { break-inside: avoid; box-shadow: none; }
+    body, :root { background: #fff; }
+}
+
+/* Tablet: aprovechar el ancho con dos columnas de tarjetas. */
+@media (min-width: 601px) and (max-width: 900px) {
+    .match-grid:not(.match-grid--1) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tournament-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-tiles { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+
+/* Mientras el formulario quede debajo de la lista (hasta 1319 px), el botón «＋» sigue visible. */
+@media (min-width: 901px) and (max-width: 1319px) {
+    .fab {
+        position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 25;
+        display: inline-flex; align-items: center; gap: .3rem;
+        padding: .8rem 1.2rem; color: #fff; font-weight: 800; text-decoration: none;
+        background: var(--acento); border-radius: 99px; box-shadow: 0 8px 22px #ed741d55;
+    }
+    .fab:hover { color: #fff; background: var(--acento-oscuro); }
 }

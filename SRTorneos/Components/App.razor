@@ -31,7 +31,44 @@
             document.querySelectorAll('button[type=submit][disabled]').forEach(function (b) { b.disabled = false; });
         });
 
+        // Clave del equipo: mientras escribes el nombre se muestra la sugerencia (si dejas el campo vacío, el servidor la asigna).
+        document.addEventListener('input', function (e) {
+            var nombre = e.target;
+            if (nombre.id) {
+                document.querySelectorAll('[data-clave-de="' + nombre.id + '"]').forEach(function (clave) {
+                    var menores = ['DE', 'DEL', 'LA', 'LAS', 'EL', 'LOS', 'Y', 'FC', 'CF', 'CLUB'];
+                    var palabras = nombre.value.normalize('NFD').toUpperCase().replace(/[^A-Z0-9 ]/g, '').split(' ').filter(function (p) { return p; });
+                    var importantes = palabras.filter(function (p) { return menores.indexOf(p) < 0; });
+                    clave.placeholder = ((importantes[0] || palabras[0] || 'HAL').substring(0, 3));
+                });
+            }
+            if (nombre.classList && nombre.classList.contains('input-clave')) {
+                var posicion = nombre.selectionStart;
+                nombre.value = nombre.value.normalize('NFD').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 3);
+                try { nombre.setSelectionRange(posicion, posicion); } catch (x) { }
+            }
+        });
+
+        // Botón flotante «＋» y edición en celular: lleva directo al formulario.
+        function irAFormulario(enfocar) {
+            var formulario = document.getElementById('formulario');
+            if (!formulario) return;
+            formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (enfocar) {
+                var campo = formulario.querySelector('input:not([type=hidden]), select, textarea');
+                if (campo) setTimeout(function () { campo.focus({ preventScroll: true }); }, 350);
+            }
+        }
+        function alCargar() {
+            if (window.innerWidth < 1320 && /[?&]editar=/.test(location.search)) irAFormulario(false);
+        }
+        document.addEventListener('DOMContentLoaded', alCargar);
+        if (window.Blazor && Blazor.addEventListener) Blazor.addEventListener('enhancedload', alCargar);
+
         document.addEventListener('click', function (e) {
+            var ir = e.target.closest('[data-ir-a]');
+            if (ir) { e.preventDefault(); irAFormulario(true); return; }
+
             // Compartir: menú nativo del celular si existe; si no, el enlace abre WhatsApp.
             var compartir = e.target.closest('[data-compartir]');
             if (compartir && navigator.share) {

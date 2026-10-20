@@ -11,6 +11,14 @@ else
 {
     <TorneoEncabezado Torneo="Torneo" Seccion="resumen" />
     <Avisos Aviso="@Aviso" Error="@Error" />
+    @if (EsAdmin && Torneo.PuntosVict is null && Torneo.EquiposMax is null)
+    {
+        <div class="alert alert-warning">Este torneo no tiene sus reglas (tipo, puntos por victoria y cupo). <a href="torneos/@Torneo.Id/editar">Edítalo y guarda</a> para registrarlas; mientras tanto se usan @Torneo.PuntosVictoria puntos por victoria y sin límite de equipos.</div>
+    }
+    @if (EsAdmin && Torneo.TipoPareceEliminatoria)
+    {
+        <div class="alert alert-info">El tipo «@Torneo.TipoTorneo» se juega como liga (todos contra todos): la base de datos todavía no guarda rondas ni llaves.</div>
+    }
 
     <section class="stat-grid">
         <div class="stat-card"><small>Equipos</small><strong>@Torneo.Equipos<span class="stat-of">/ @(Torneo.EquiposMax?.ToString() ?? "—")</span></strong></div>
@@ -77,7 +85,7 @@ else
                     {
                         <li>
                             <a href="torneos/@Torneo.Id/jugadores/@anotador.IdJugador">
-                                <Escudo Nombre="@anotador.Equipo" Tamano="xs" />
+                                <Escudo Nombre="@anotador.Equipo" Clave="@anotador.EquipoClave" Tamano="xs" />
                                 <span class="leader-card__name">@anotador.Nombre<small>#@anotador.Numero · @anotador.Equipo · @Presentacion.Decimal(anotador.Promedio) por partido</small></span>
                                 <b>@anotador.Puntos</b>
                             </a>

@@ -54,7 +54,8 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
                            FROM Anotacion an
                            INNER JOIN Partidos p ON p.Id = an.IdPartido
                            WHERE an.IdJugador = j.Id AND p.IdTorneo = a.IdTorneo), 0) AS Puntos,
-                   (SELECT COUNT(*) FROM Faltas f WHERE f.IdJugador = j.Id AND f.IdTorneo = a.IdTorneo) AS Faltas
+                   (SELECT COUNT(*) FROM Faltas f INNER JOIN Partidos pf ON pf.Id = f.IdPartido
+                     WHERE f.IdJugador = j.Id AND pf.IdTorneo = a.IdTorneo) AS Faltas
             FROM Alineaciones a
             INNER JOIN Jugadores j ON j.Id = a.IdJugador
             WHERE a.IdTorneo = @idTorneo AND a.IdEquipo = @idEquipo
@@ -87,7 +88,7 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
 
     public Task<List<Anotador>> ObtenerLideresAsync(int idTorneo, int cantidad, CancellationToken cancellationToken = default)
         => ConsultarAsync("""
-            SELECT TOP (@cantidad) j.Id AS IdJugador, j.Nombre, j.Numero, e.Nombre AS Equipo, x.Puntos,
+            SELECT TOP (@cantidad) j.Id AS IdJugador, j.Nombre, j.Numero, e.Nombre AS Equipo, ISNULL(e.Clave, '') AS EquipoClave, x.Puntos,
                    (SELECT COUNT(*) FROM Partidos p
                      WHERE p.IdTorneo = a.IdTorneo
                        AND (p.IdEquipo1 = a.IdEquipo OR p.IdEquipo2 = a.IdEquipo)
@@ -108,6 +109,7 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
                 Nombre = l.Texto("Nombre"),
                 Numero = l.Entero("Numero"),
                 Equipo = l.Texto("Equipo"),
+                EquipoClave = l.Texto("EquipoClave"),
                 Puntos = l.Entero("Puntos"),
                 Partidos = l.Entero("Partidos")
             },
@@ -120,7 +122,7 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
     public async Task<List<EstadisticaJugador>> ObtenerEstadisticasAsync(int idTorneo, CancellationToken cancellationToken = default)
     {
         var jugadores = await ConsultarAsync("""
-            SELECT j.Id AS IdJugador, j.Nombre, j.Numero, j.Posicion, a.IdEquipo, e.Nombre AS Equipo,
+            SELECT j.Id AS IdJugador, j.Nombre, j.Numero, j.Posicion, a.IdEquipo, e.Nombre AS Equipo, ISNULL(e.Clave, '') AS EquipoClave,
                    (SELECT COUNT(*) FROM Partidos p
                      WHERE p.IdTorneo = a.IdTorneo
                        AND (p.IdEquipo1 = a.IdEquipo OR p.IdEquipo2 = a.IdEquipo)
@@ -128,7 +130,8 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
                    (SELECT COUNT(DISTINCT an.IdPartido) FROM Anotacion an
                      INNER JOIN Partidos p ON p.Id = an.IdPartido
                      WHERE an.IdJugador = a.IdJugador AND p.IdTorneo = a.IdTorneo) AS PartidosAnotando,
-                   (SELECT COUNT(*) FROM Faltas f WHERE f.IdJugador = a.IdJugador AND f.IdTorneo = a.IdTorneo) AS Faltas
+                   (SELECT COUNT(*) FROM Faltas f INNER JOIN Partidos pf ON pf.Id = f.IdPartido
+                     WHERE f.IdJugador = a.IdJugador AND pf.IdTorneo = a.IdTorneo) AS Faltas
             FROM Alineaciones a
             INNER JOIN Jugadores j ON j.Id = a.IdJugador
             INNER JOIN Equipos e ON e.Id = a.IdEquipo
@@ -142,6 +145,7 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
                 Posicion = l.Texto("Posicion"),
                 IdEquipo = l.Entero("IdEquipo"),
                 Equipo = l.Texto("Equipo"),
+                EquipoClave = l.Texto("EquipoClave"),
                 PartidosEquipo = l.Entero("PartidosEquipo"),
                 PartidosAnotando = l.Entero("PartidosAnotando"),
                 Faltas = l.Entero("Faltas")
@@ -187,7 +191,8 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
         var faltas = await ConsultarAsync("""
             SELECT f.IdPartido, COUNT(*) AS Faltas
             FROM Faltas f
-            WHERE f.IdJugador = @idJugador AND f.IdTorneo = @idTorneo
+            INNER JOIN Partidos p ON p.Id = f.IdPartido
+            WHERE f.IdJugador = @idJugador AND p.IdTorneo = @idTorneo
             GROUP BY f.IdPartido;
             """,
             l => (IdPartido: l.Entero("IdPartido"), Faltas: l.Entero("Faltas")),
@@ -241,7 +246,8 @@ public class JugadorRepository(ISqlConnectionFactory connectionFactory)
             int estadisticas = await EscalarEnteroAsync(conexion, transaccion, """
                 SELECT (SELECT COUNT(*) FROM Anotacion an INNER JOIN Partidos p ON p.Id = an.IdPartido
                         WHERE an.IdJugador = @idJugador AND p.IdTorneo = @idTorneo)
-                     + (SELECT COUNT(*) FROM Faltas f WHERE f.IdJugador = @idJugador AND f.IdTorneo = @idTorneo);
+                     + (SELECT COUNT(*) FROM Faltas f INNER JOIN Partidos p ON p.Id = f.IdPartido
+                        WHERE f.IdJugador = @idJugador AND p.IdTorneo = @idTorneo);
                 """, Parametros, cancellationToken);
 
             if (estadisticas > 0) return false;

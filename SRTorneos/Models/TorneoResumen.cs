@@ -32,6 +32,10 @@ public class TorneoResumen
     public DateTime? UltimoPartido { get; set; }
 
     public int PuntosVictoria => PuntosVict ?? PuntosVictoriaPorDefecto;
+
+    /// <summary>El nombre del tipo sugiere eliminatoria; con la base actual se juega como liga (todos contra todos).</summary>
+    public bool TipoPareceEliminatoria
+        => new[] { "elimin", "copa", "llave", "playoff", "knock" }.Any(p => TipoTorneo.Contains(p, StringComparison.OrdinalIgnoreCase));
     public bool CupoLleno => EquiposMax is > 0 && Equipos >= EquiposMax;
     public int DuracionDias => FechaFin.DayNumber - FechaInicio.DayNumber + 1;
 

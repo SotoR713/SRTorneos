@@ -10,7 +10,7 @@ public sealed record CatalogoDefinicion(
     string Singular,
     string Tabla,
     int LargoMaximo,
-    bool Numerico,
+    bool OrdenPorId,
     string ConsultaUsos,
     string Descripcion,
     string DondeSeUsa);
@@ -28,9 +28,9 @@ public static class CatalogosEditables
         new("estados", "Estados", "estado", "Estados", 10, false,
             "(SELECT COUNT(*) FROM Inscripciones x WHERE x.IdEstado = c.Id)",
             "Situación de un equipo inscrito en un torneo (activo, baja, eliminado…). El primero que registraste se propone al inscribir.", "inscripciones"),
-        new("puestos", "Puestos", "puesto", "Puestos", 3, true,
+        new("puestos", "Puestos", "puesto", "Puestos", 20, true,
             "(SELECT COUNT(*) FROM Inscripciones x WHERE x.IdPuesto = c.Id)",
-            "Lugar final de un equipo en el torneo (1°, 2°…). El 0 significa «Sin definir» y es el que se propone al inscribir.", "inscripciones"),
+            $"Lugar de un equipo en el torneo (Inscrito, Campeón, Subcampeón, 3er lugar…). «{Models.Puestos.Inscrito}» se propone al inscribir.", "inscripciones"),
         new("tipos-falta", "Tipos de falta", "tipo de falta", "TiposFaltas", 15, false,
             "(SELECT COUNT(*) FROM Faltas x WHERE x.IdTipoFalta = c.Id)",
             "Clasificación de las faltas que se registran en los partidos.", "faltas")

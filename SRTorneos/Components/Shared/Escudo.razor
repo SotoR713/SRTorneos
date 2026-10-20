@@ -1,8 +1,14 @@
-@* Escudo del equipo: iniciales sobre un color fijo calculado con el nombre (la base no guarda logos ni colores). *@
-<span class="escudo escudo--@Tamano" style="--escudo: @Presentacion.ColorEquipo(Nombre)" aria-hidden="true">@Presentacion.Iniciales(Nombre)</span>
+@* Escudo del equipo: su clave (Equipos.Clave) sobre un color fijo calculado con el nombre. Sin clave, las iniciales. *@
+@{
+    string texto = string.IsNullOrWhiteSpace(Clave) ? Presentacion.Iniciales(Nombre) : Clave.Trim().ToUpperInvariant();
+}
+<span class="escudo escudo--@Tamano @(texto.Length > 2 ? "escudo--3" : null)" style="--escudo: @Presentacion.ColorEquipo(string.IsNullOrWhiteSpace(Clave) ? Nombre : Clave)" aria-hidden="true">@texto</span>
 
 @code {
     [Parameter, EditorRequired] public string Nombre { get; set; } = string.Empty;
+
+    /// <summary>Clave del equipo (CUR, HAL…). Si viene vacía se usan las iniciales del nombre.</summary>
+    [Parameter] public string? Clave { get; set; }
 
     /// <summary>xs, sm, md, lg o xl.</summary>
     [Parameter] public string Tamano { get; set; } = "md";

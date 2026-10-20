@@ -12,6 +12,9 @@ public class InscripcionFormulario : IValidatableObject
     [StringLength(20, ErrorMessage = "El nombre no puede superar 20 caracteres.")]
     public string? NuevoEquipo { get; set; }
 
+    [StringLength(ClaveEquipo.Largo, ErrorMessage = "La clave es de máximo 3 caracteres.")]
+    public string? NuevaClave { get; set; }
+
     [Range(1, int.MaxValue, ErrorMessage = "Selecciona un estado.")]
     public int IdEstado { get; set; }
 

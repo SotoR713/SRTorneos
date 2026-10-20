@@ -22,7 +22,7 @@ else
         var (estado, claseEstado) = Presentacion.EstadoPartido(Partido);
         <section class="scoreboard">
             <a class="scoreboard__team @(Partido.GanoLocal ? "winner" : null)" href="torneos/@Id/equipos/@Partido.IdEquipo1">
-                <Escudo Nombre="@Partido.Equipo1" Tamano="lg" />
+                <Escudo Nombre="@Partido.Equipo1" Clave="@Partido.Clave1" Tamano="lg" />
                 <strong>@Partido.Equipo1</strong><small>LOCAL</small>
             </a>
             <div class="scoreboard__score">
@@ -38,7 +38,7 @@ else
                 <small>@Presentacion.FechaHora(Partido.Fecha)</small>
             </div>
             <a class="scoreboard__team @(Partido.GanoVisitante ? "winner" : null)" href="torneos/@Id/equipos/@Partido.IdEquipo2">
-                <Escudo Nombre="@Partido.Equipo2" Tamano="lg" />
+                <Escudo Nombre="@Partido.Equipo2" Clave="@Partido.Clave2" Tamano="lg" />
                 <strong>@Partido.Equipo2</strong><small>VISITANTE</small>
             </a>
         </section>
@@ -66,7 +66,7 @@ else
                     {
                         <div class="result-team">
                             <div class="result-team__head">
-                                <h3><Escudo Nombre="@nombre" Tamano="xs" /> @nombre</h3>
+                                <h3><Escudo Nombre="@nombre" Clave="@(idEquipo == Partido.IdEquipo1 ? Partido.Clave1 : Partido.Clave2)" Tamano="xs" /> @nombre</h3>
                                 <span class="score-readonly">@((esLocal ? Partido.Puntos1 : Partido.Puntos2)?.ToString() ?? "–")</span>
                             </div>
                             @if (JugadoresDe(idEquipo).Count == 0)

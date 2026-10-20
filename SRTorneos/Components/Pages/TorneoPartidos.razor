@@ -60,7 +60,8 @@ else
 
         @if (EsAdmin)
         {
-        <section class="panel panel--form">
+        <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Partido</a>
+        <section class="panel panel--form" id="formulario">
             <header class="panel__header"><h2>@(EnEdicion ? "Editar partido" : "Programar partido")</h2></header>
 
             @if (FormPartido is not null)
@@ -90,7 +91,7 @@ else
                         <label for="local">Equipo local</label>
                         <InputSelect id="local" class="form-select" @bind-Value="FormPartido.IdEquipo1">
                             <option value="0">— Selecciona —</option>
-                            @foreach (var equipo in Equipos) { <option value="@equipo.IdEquipo">@equipo.Nombre</option> }
+                            @foreach (var equipo in Equipos) { <option value="@equipo.IdEquipo">@equipo.Nombre (@equipo.Clave)</option> }
                         </InputSelect>
                         <ValidationMessage For="@(() => FormPartido.IdEquipo1)" />
                     </div>
@@ -98,7 +99,7 @@ else
                         <label for="visitante">Equipo visitante</label>
                         <InputSelect id="visitante" class="form-select" @bind-Value="FormPartido.IdEquipo2">
                             <option value="0">— Selecciona —</option>
-                            @foreach (var equipo in Equipos) { <option value="@equipo.IdEquipo">@equipo.Nombre</option> }
+                            @foreach (var equipo in Equipos) { <option value="@equipo.IdEquipo">@equipo.Nombre (@equipo.Clave)</option> }
                         </InputSelect>
                         <ValidationMessage For="@(() => FormPartido.IdEquipo2)" />
                     </div>

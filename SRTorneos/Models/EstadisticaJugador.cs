@@ -9,6 +9,7 @@ public class EstadisticaJugador
     public string Posicion { get; set; } = string.Empty;
     public int IdEquipo { get; set; }
     public string Equipo { get; set; } = string.Empty;
+    public string EquipoClave { get; set; } = string.Empty;
 
     /// <summary>Partidos con resultado de su equipo (la base no registra asistencia individual).</summary>
     public int PartidosEquipo { get; set; }

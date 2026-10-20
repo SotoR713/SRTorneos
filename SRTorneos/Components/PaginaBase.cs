@@ -10,8 +10,13 @@ namespace SRTorneos.Components;
 /// </summary>
 public abstract class PaginaBase : ComponentBase
 {
-    protected const string ErrorConexion =
-        "No fue posible conectar con SRTorneosBD. Verifica que SQL Server esté iniciado.";
+    /// <summary>Mensaje genérico al leer datos. Si de verdad no hay conexión, IntentarAsync lo cambia por <see cref="SinConexion"/>.</summary>
+    protected const string ErrorConexion = "No se pudieron cargar los datos de SRTorneosBD.";
+
+    private const string SinConexion = "No fue posible conectar con SRTorneosBD. Verifica que SQL Server esté iniciado.";
+
+    /// <summary>Errores de SQL Server que significan "no hay conexión" (servidor apagado, red, base o permiso de acceso).</summary>
+    private static bool EsSinConexion(SqlException ex) => ex.Number is -2 or -1 or 2 or 53 or 4060 or 18456 or 10053 or 10054 or 10060 or 10061 or 11001;
 
     [Inject] protected NavigationManager Navegacion { get; set; } = default!;
     [Inject] protected ILogger<PaginaBase> Logger { get; set; } = default!;
@@ -56,6 +61,7 @@ public abstract class PaginaBase : ComponentBase
             Logger.LogError(ex, "Error de SQL {Numero}: {Mensaje}", ex.Number, mensajeError);
             string mensaje = ex switch
             {
+                _ when EsSinConexion(ex) => SinConexion,
                 _ when ex.EsLlaveForanea() && mensajeRelacionados is not null => mensajeRelacionados,
                 _ when ex.EsDuplicado() => $"{mensajeError} Ya existe un registro con ese valor y la base no permite repetirlo.",
                 _ when ex.EsRestriccionCheck() => $"{mensajeError} La base de datos rechazó un valor por una de sus reglas (restricción CHECK).",

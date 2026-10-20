@@ -103,7 +103,6 @@ public static class Presentacion
         return lista.Count <= 1 ? string.Concat(lista) : $"{string.Join(", ", lista[..^1])} {conjuncion} {lista[^1]}";
     }
 
-    public static string Puesto(int puesto) => puesto <= 0 ? "Sin definir" : $"{puesto}°";
 
     // ---------- Estilo app: escudos, estados de partido, compartir ----------
 
@@ -183,6 +182,10 @@ public static class Presentacion
     public static string UrlMapa(string nombre, string direccion)
         => "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(
             string.IsNullOrWhiteSpace(direccion) ? nombre : $"{nombre}, {direccion}");
+
+    /// <summary>"Básquetbol · Liga"; sin tipo (torneo sin configuración en ConfigTorn), solo el deporte.</summary>
+    public static string DeporteYTipo(TorneoResumen torneo)
+        => string.IsNullOrWhiteSpace(torneo.TipoTorneo) ? torneo.Deporte : $"{torneo.Deporte} · {torneo.TipoTorneo}";
 
     public static string Decimal(decimal valor) => valor.ToString("0.0", Cultura);
 }

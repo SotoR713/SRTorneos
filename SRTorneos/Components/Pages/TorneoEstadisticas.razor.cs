@@ -21,7 +21,7 @@ public class TorneoEstadisticasBase : TorneoPaginaBase
     protected IReadOnlyList<TipoAnotacion> Tipos { get; private set; } = [];
 
     protected IEnumerable<(int Id, string Nombre)> Equipos
-        => Jugadores.Select(j => (j.IdEquipo, j.Equipo)).Distinct().OrderBy(e => e.Equipo);
+        => Jugadores.Select(j => (j.IdEquipo, $"{j.Equipo} ({j.EquipoClave})")).Distinct().OrderBy(e => e.Item2);
 
     /// <summary>Categorías de líderes: título, valor a mostrar y criterio.</summary>
     protected IEnumerable<(string Titulo, string Unidad, List<(EstadisticaJugador Jugador, string Valor)> Top)> Lideres

@@ -9,44 +9,48 @@ public class EquipoRepository(ISqlConnectionFactory connectionFactory)
 {
     public Task<List<EquipoResumen>> ObtenerTodosAsync(CancellationToken cancellationToken = default)
         => ConsultarAsync("""
-            SELECT e.Id, e.Nombre,
+            SELECT e.Id, e.Nombre, ISNULL(e.Clave, '') AS Clave,
                    (SELECT COUNT(*) FROM Inscripciones i WHERE i.IdEquipo = e.Id) AS Torneos
             FROM Equipos e
-            ORDER BY e.Nombre;
+            ORDER BY e.Nombre, e.Clave;
             """,
-            l => new EquipoResumen { Id = l.Entero("Id"), Nombre = l.Texto("Nombre"), Torneos = l.Entero("Torneos") },
+            l => new EquipoResumen { Id = l.Entero("Id"), Nombre = l.Texto("Nombre"), Clave = l.Texto("Clave"), Torneos = l.Entero("Torneos") },
             cancellationToken: cancellationToken);
 
     public Task<Equipo?> ObtenerPorIdAsync(int id, CancellationToken cancellationToken = default)
-        => ConsultarUnoAsync("SELECT Id, Nombre FROM Equipos WHERE Id = @id;",
-            l => new Equipo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre") },
+        => ConsultarUnoAsync("SELECT Id, Nombre, ISNULL(Clave, '') AS Clave FROM Equipos WHERE Id = @id;",
+            l => new Equipo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre"), Clave = l.Texto("Clave") },
             p => p.Entero("@id", id), cancellationToken);
 
-    public async Task<bool> ExisteNombreAsync(string nombre, int excluirId = 0, CancellationToken cancellationToken = default)
-        => await EscalarEnteroAsync("SELECT COUNT(*) FROM Equipos WHERE Nombre = @nombre AND Id <> @excluirId;", p =>
-        {
-            p.Texto("@nombre", nombre.Trim(), 20);
-            p.Entero("@excluirId", excluirId);
-        }, cancellationToken) > 0;
+    public Task<List<string>> ObtenerClavesAsync(int excluirId = 0, CancellationToken cancellationToken = default)
+        => ConsultarAsync("SELECT ISNULL(Clave, '') AS Clave FROM Equipos WHERE Id <> @excluirId;",
+            l => l.Texto("Clave"), p => p.Entero("@excluirId", excluirId), cancellationToken);
 
-    public Task<int> CrearAsync(string nombre, CancellationToken cancellationToken = default)
-        => EscalarEnteroAsync("INSERT INTO Equipos (Nombre) OUTPUT INSERTED.Id VALUES (@nombre);",
-            p => p.Texto("@nombre", nombre.Trim(), 20), cancellationToken);
+    public Task<int> CrearAsync(string nombre, string clave, CancellationToken cancellationToken = default)
+        => EscalarEnteroAsync(SqlCrearEquipo, p => ParametrosEquipo(p, nombre, clave), cancellationToken);
 
     public async Task<bool> ActualizarAsync(Equipo equipo, CancellationToken cancellationToken = default)
-        => await EjecutarAsync("UPDATE Equipos SET Nombre = @nombre WHERE Id = @id;", p =>
+        => await EjecutarAsync("UPDATE Equipos SET Nombre = @nombre, Clave = @clave WHERE Id = @id;", p =>
         {
-            p.Texto("@nombre", equipo.Nombre.Trim(), 20);
+            ParametrosEquipo(p, equipo.Nombre, equipo.Clave ?? string.Empty);
             p.Entero("@id", equipo.Id);
         }, cancellationToken) == 1;
+
+    private const string SqlCrearEquipo = "INSERT INTO Equipos (Nombre, Clave) OUTPUT INSERTED.Id VALUES (@nombre, @clave);";
+
+    private static void ParametrosEquipo(SqlParameterCollection p, string nombre, string clave)
+    {
+        p.Texto("@nombre", nombre.Trim(), 20);
+        p.Texto("@clave", clave.Trim().ToUpperInvariant(), ClaveEquipo.Largo);
+    }
 
     public async Task<bool> EliminarAsync(int id, CancellationToken cancellationToken = default)
         => await EjecutarAsync("DELETE FROM Equipos WHERE Id = @id;", p => p.Entero("@id", id), cancellationToken) == 1;
 
     private const string ConsultaInscritos = """
-        SELECT i.Id AS IdInscripcion, e.Id AS IdEquipo, e.Nombre,
+        SELECT i.Id AS IdInscripcion, e.Id AS IdEquipo, e.Nombre, ISNULL(e.Clave, '') AS Clave,
                i.IdEstado, es.Nombre AS Estado,
-               i.IdPuesto, pu.Nombre AS Puesto,
+               i.IdPuesto, CAST(pu.Nombre AS varchar(20)) AS Puesto,
                (SELECT COUNT(*) FROM Alineaciones a WHERE a.IdTorneo = i.IdTorneo AND a.IdEquipo = e.Id) AS Jugadores,
                (SELECT COUNT(*) FROM Partidos p
                  WHERE p.IdTorneo = i.IdTorneo AND (p.IdEquipo1 = e.Id OR p.IdEquipo2 = e.Id)) AS Partidos
@@ -70,23 +74,22 @@ public class EquipoRepository(ISqlConnectionFactory connectionFactory)
 
     public Task<List<Equipo>> ObtenerNoInscritosAsync(int idTorneo, CancellationToken cancellationToken = default)
         => ConsultarAsync("""
-            SELECT e.Id, e.Nombre
+            SELECT e.Id, e.Nombre, ISNULL(e.Clave, '') AS Clave
             FROM Equipos e
             WHERE NOT EXISTS (SELECT 1 FROM Inscripciones i WHERE i.IdTorneo = @idTorneo AND i.IdEquipo = e.Id)
-            ORDER BY e.Nombre;
+            ORDER BY e.Nombre, e.Clave;
             """,
-            l => new Equipo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre") },
+            l => new Equipo { Id = l.Entero("Id"), Nombre = l.Texto("Nombre"), Clave = l.Texto("Clave") },
             p => p.Entero("@idTorneo", idTorneo), cancellationToken);
 
     public Task InscribirAsync(int idTorneo, int idEquipo, int idEstado, int idPuesto, CancellationToken cancellationToken = default)
         => EjecutarAsync(SqlInscribir, p => ParametrosInscripcion(p, idTorneo, idEquipo, idEstado, idPuesto), cancellationToken);
 
-    public Task<int> CrearEInscribirAsync(int idTorneo, string nombre, int idEstado, int idPuesto, CancellationToken cancellationToken = default)
+    public Task<int> CrearEInscribirAsync(int idTorneo, string nombre, string clave, int idEstado, int idPuesto, CancellationToken cancellationToken = default)
         => EnTransaccionAsync(async (conexion, transaccion) =>
         {
-            int idEquipo = await EscalarEnteroAsync(conexion, transaccion,
-                "INSERT INTO Equipos (Nombre) OUTPUT INSERTED.Id VALUES (@nombre);",
-                p => p.Texto("@nombre", nombre.Trim(), 20), cancellationToken);
+            int idEquipo = await EscalarEnteroAsync(conexion, transaccion, SqlCrearEquipo,
+                p => ParametrosEquipo(p, nombre, clave), cancellationToken);
 
             await EjecutarAsync(conexion, transaccion, SqlInscribir,
                 p => ParametrosInscripcion(p, idTorneo, idEquipo, idEstado, idPuesto), cancellationToken);
@@ -148,10 +151,11 @@ public class EquipoRepository(ISqlConnectionFactory connectionFactory)
         IdInscripcion = l.Entero("IdInscripcion"),
         IdEquipo = l.Entero("IdEquipo"),
         Nombre = l.Texto("Nombre"),
+        Clave = l.Texto("Clave"),
         IdEstado = l.Entero("IdEstado"),
         Estado = l.Texto("Estado"),
         IdPuesto = l.Entero("IdPuesto"),
-        Puesto = l.Entero("Puesto"),
+        Puesto = l.Texto("Puesto"),
         Jugadores = l.Entero("Jugadores"),
         Partidos = l.Entero("Partidos")
     };

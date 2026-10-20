@@ -83,7 +83,7 @@ public class TorneoRepository(ISqlConnectionFactory connectionFactory)
     {
         const string sql = """
             DELETE a FROM Anotacion a INNER JOIN Partidos p ON p.Id = a.IdPartido WHERE p.IdTorneo = @id;
-            DELETE f FROM Faltas f WHERE f.IdTorneo = @id OR f.IdPartido IN (SELECT Id FROM Partidos WHERE IdTorneo = @id);
+            DELETE f FROM Faltas f INNER JOIN Partidos p ON p.Id = f.IdPartido WHERE p.IdTorneo = @id;
             DELETE s FROM Puntajes s INNER JOIN Partidos p ON p.Id = s.IdPartido WHERE p.IdTorneo = @id;
             DELETE FROM Partidos WHERE IdTorneo = @id;
             DELETE FROM Alineaciones WHERE IdTorneo = @id;

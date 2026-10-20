@@ -9,8 +9,8 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
 {
     private const string ConsultaPartidos = """
         SELECT p.Id, p.IdTorneo, t.Nombre AS Torneo, d.Nombre AS Deporte, p.Fecha,
-               p.IdEquipo1, e1.Nombre AS Equipo1,
-               p.IdEquipo2, e2.Nombre AS Equipo2,
+               p.IdEquipo1, e1.Nombre AS Equipo1, ISNULL(e1.Clave, '') AS Clave1,
+               p.IdEquipo2, e2.Nombre AS Equipo2, ISNULL(e2.Clave, '') AS Clave2,
                p.IdLugar, l.Nombre AS Lugar,
                (SELECT TOP (1) s.Puntos FROM Puntajes s
                  WHERE s.IdPartido = p.Id AND s.IdEquipo = p.IdEquipo1 ORDER BY s.Id DESC) AS Puntos1,
@@ -204,9 +204,10 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
                    ISNULL(a.IdEquipo, 0) AS IdEquipo, ISNULL(e.Nombre, '') AS Equipo,
                    tf.Nombre AS TipoFalta
             FROM Faltas f
+            INNER JOIN Partidos pt ON pt.Id = f.IdPartido
             INNER JOIN Jugadores j ON j.Id = f.IdJugador
             INNER JOIN TiposFaltas tf ON tf.Id = f.IdTipoFalta
-            LEFT JOIN Alineaciones a ON a.IdTorneo = f.IdTorneo AND a.IdJugador = f.IdJugador
+            LEFT JOIN Alineaciones a ON a.IdTorneo = pt.IdTorneo AND a.IdJugador = f.IdJugador
             LEFT JOIN Equipos e ON e.Id = a.IdEquipo
             WHERE f.IdPartido = @idPartido
             ORDER BY f.Id;
@@ -224,9 +225,12 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
             p => p.Entero("@idPartido", idPartido), cancellationToken);
 
     public Task RegistrarFaltaAsync(int idTorneo, int idPartido, int idJugador, int idTipoFalta, CancellationToken cancellationToken = default)
+        // Faltas no guarda el torneo: se obtiene de Partidos. El SELECT confirma que el partido es de este torneo.
         => EjecutarAsync("""
-            INSERT INTO Faltas (IdJugador, IdPartido, IdTorneo, IdTipoFalta)
-            VALUES (@idJugador, @idPartido, @idTorneo, @idTipoFalta);
+            INSERT INTO Faltas (IdJugador, IdPartido, IdTipoFalta)
+            SELECT @idJugador, p.Id, @idTipoFalta
+            FROM Partidos p
+            WHERE p.Id = @idPartido AND p.IdTorneo = @idTorneo;
             """, p =>
         {
             p.Entero("@idJugador", idJugador);
@@ -257,7 +261,7 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
                 UNION ALL
                 SELECT IdEquipo2, Puntos2, Puntos1 FROM Marcadores
             )
-            SELECT e.Id AS IdEquipo, e.Nombre AS Equipo,
+            SELECT e.Id AS IdEquipo, e.Nombre AS Equipo, ISNULL(e.Clave, '') AS Clave,
                    COUNT(r.IdEquipo) AS Jugados,
                    SUM(CASE WHEN r.PF > r.PC THEN 1 ELSE 0 END) AS Ganados,
                    SUM(CASE WHEN r.PF < r.PC THEN 1 ELSE 0 END) AS Perdidos,
@@ -268,13 +272,14 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
             INNER JOIN Equipos e ON e.Id = i.IdEquipo
             LEFT JOIN Resultados r ON r.IdEquipo = i.IdEquipo
             WHERE i.IdTorneo = @idTorneo
-            GROUP BY e.Id, e.Nombre;
+            GROUP BY e.Id, e.Nombre, e.Clave;
             """;
 
         var tabla = await ConsultarAsync(sql, l => new FilaPosicion
         {
             IdEquipo = l.Entero("IdEquipo"),
             Equipo = l.Texto("Equipo"),
+            Clave = l.Texto("Clave"),
             Jugados = l.Entero("Jugados"),
             Ganados = l.Entero("Ganados"),
             Perdidos = l.Entero("Perdidos"),
@@ -314,8 +319,10 @@ public class PartidoRepository(ISqlConnectionFactory connectionFactory)
         Fecha = l.FechaHora("Fecha"),
         IdEquipo1 = l.Entero("IdEquipo1"),
         Equipo1 = l.Texto("Equipo1"),
+        Clave1 = l.Texto("Clave1"),
         IdEquipo2 = l.Entero("IdEquipo2"),
         Equipo2 = l.Texto("Equipo2"),
+        Clave2 = l.Texto("Clave2"),
         IdLugar = l.Entero("IdLugar"),
         Lugar = l.Texto("Lugar"),
         Puntos1 = l.EnteroNulo("Puntos1"),

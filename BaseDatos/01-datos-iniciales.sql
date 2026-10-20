@@ -25,9 +25,9 @@ INSERT INTO Estados (Nombre)
 SELECT v.Nombre FROM (VALUES ('Activo'), ('Baja'), ('Eliminado'), ('Campeón')) v(Nombre)
 WHERE NOT EXISTS (SELECT 1 FROM Estados e WHERE e.Nombre = v.Nombre);
 
--- Puestos (Nombre es INT). 0 = "Sin definir" (la app lo sugiere al inscribir); 1..8 = lugar final.
+-- Puestos (Nombre varchar 20). "Inscrito" es el que la app propone al inscribir; los demás son lugares finales.
 INSERT INTO Puestos (Nombre)
-SELECT v.Nombre FROM (VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8)) v(Nombre)
+SELECT v.Nombre FROM (VALUES ('Inscrito'), ('Campeón'), ('Subcampeón'), ('3er lugar'), ('4to lugar')) v(Nombre)
 WHERE NOT EXISTS (SELECT 1 FROM Puestos p WHERE p.Nombre = v.Nombre);
 
 -- Tipos de falta (varchar 15)

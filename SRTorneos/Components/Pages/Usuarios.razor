@@ -15,14 +15,14 @@
         <header class="panel__header"><h2>Usuarios <span class="count-pill">@Lista.Count</span></h2></header>
         <form method="post" @formname="eliminar-usuario" @onsubmit="EliminarAsync">
             <AntiforgeryToken />
-            <table class="data-table">
+            <table class="data-table tabla-tarjetas">
                 <thead><tr><th>Usuario</th><th class="num">Torneos creados</th><th class="actions"></th></tr></thead>
                 <tbody>
                     @foreach (var usuario in Lista)
                     {
                         <tr class="@(usuario.Id == Editar ? "is-editing" : null)">
-                            <td class="row-title">@usuario.UserName @if (usuario.Id == IdUsuarioActual) { <span class="badge-soft">Tú</span> }</td>
-                            <td class="num">@usuario.Torneos</td>
+                            <td class="row-title celda-titulo">@usuario.UserName @if (usuario.Id == IdUsuarioActual) { <span class="badge-soft">Tú</span> }</td>
+                            <td class="num" data-label="Torneos creados">@usuario.Torneos</td>
                             <td class="actions">
                                 <a class="btn btn-sm btn-light" href="usuarios?editar=@usuario.Id">Cambiar contraseña</a>
                                 @if (usuario.Id != IdUsuarioActual && usuario.Torneos == 0)
@@ -38,7 +38,9 @@
         </form>
     </section>
 
-    <section class="panel panel--form">
+    <a class="fab" href="@($"{Navegacion.ToBaseRelativePath(Navegacion.Uri).Split('#')[0]}#formulario")" data-ir-a="formulario">＋ Usuario</a>
+
+    <section class="panel panel--form" id="formulario">
         <header class="panel__header"><h2>@(EnEdicion ? $"Contraseña de {UsuarioEnEdicion?.UserName}" : "Nuevo usuario")</h2></header>
         @if (FormUsuario is not null)
         {
